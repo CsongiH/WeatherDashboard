@@ -1,0 +1,86 @@
+@using WeatherDashboard.Models
+@using WeatherDashboard.Services
+@inject WeatherService WeatherService
+@inject IJSRuntime JSRuntime
+
+<nav class="navbar">
+    <div class="navbar-brand">Weather Dashboard</div>
+
+    <div class="navbar-search">
+        <input type="text"
+               @bind="searchQuery"
+               @bind:event="oninput"
+               @onkeypress="HandleKeyPress"
+               placeholder="Search for a city..."
+               aria-label="City search" />
+        <button @onclick="SearchCity" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span>Searching...</span>
+            }
+            else
+            {
+                <span>Search</span>
+            }
+        </button>
+    </div>
+
+    <div class="navbar-actions">
+        <ThemeToggle />
+    </div>
+</nav>
+
+@code {
+    [Parameter]
+    public EventCallback<List<GeocodingResult>> OnSearchResults { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSearchError { get; set; }
+
+    private string searchQuery = string.Empty;
+    private bool isLoading = false;
+
+    private async Task SearchCity()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            await OnSearchError.InvokeAsync("Please enter a city name.");
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+            await OnSearchError.InvokeAsync(string.Empty);
+
+            var results = await WeatherService.SearchCitiesAsync(searchQuery);
+
+            if (!results.Any())
+            {
+                await OnSearchError.InvokeAsync($"No cities found matching '{searchQuery}'. Please try a different search.");
+                await OnSearchResults.InvokeAsync(new List<GeocodingResult>());
+            }
+            else
+            {
+                await OnSearchResults.InvokeAsync(results);
+            }
+        }
+        catch (Exception ex)
+        {
+            await OnSearchError.InvokeAsync(ex.Message);
+            await OnSearchResults.InvokeAsync(new List<GeocodingResult>());
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !isLoading)
+        {
+            await SearchCity();
+        }
+    }
+}

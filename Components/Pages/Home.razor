@@ -1,0 +1,197 @@
+@page "/"
+@using WeatherDashboard.Models
+@using WeatherDashboard.Services
+@using WeatherDashboard.Components.Shared
+@inject WeatherService WeatherService
+@inject FavoritesService FavoritesService
+
+<PageTitle>Weather Dashboard</PageTitle>
+
+<div class="app-container">
+    <Navbar OnSearchResults="HandleSearchResults" OnSearchError="HandleSearchError" />
+
+    <Sidebar FavoriteCities="favoriteCities"
+             OnCitySelected="SelectCity"
+             OnFavoritesChanged="LoadFavorites" />
+
+    <main class="main-content">
+        <div class="content-wrapper">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="error-message">
+                    @errorMessage
+                </div>
+            }
+
+            @if (searchResults.Any())
+            {
+                <div class="search-results">
+                    <h2 class="search-results-title">Search Results</h2>
+                    <div class="search-results-grid">
+                        @foreach (var city in searchResults)
+                        {
+                            <div class="city-card" @onclick="() => SelectCity(city)">
+                                <div class="city-card-content">
+                                    <div class="city-name">@city.Name</div>
+                                    <div class="city-details">
+                                        @if (!string.IsNullOrEmpty(city.Admin1))
+                                        {
+                                            <span>@city.Admin1, </span>
+                                        }
+                                        <span>@city.Country</span>
+                                    </div>
+                                </div>
+                                <button class="favorite-btn @(IsCityFavorite(city) ? "favorited" : "")"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => ToggleFavorite(city)"
+                                        title="@(IsCityFavorite(city) ? "Remove from favorites" : "Add to favorites")">
+                                    @(IsCityFavorite(city) ? "★" : "☆")
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (selectedCity != null && forecasts.Any())
+            {
+                <div class="forecast-section">
+                    <h2 class="forecast-title">5-Day Forecast for @selectedCity.Name</h2>
+                    <div class="forecast-table-container">
+                        <table class="forecast-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    @foreach (var forecast in forecasts)
+                                    {
+                                        <th class="forecast-date-cell">@forecast.Date.ToString("ddd, MMM dd")</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Weather</strong></td>
+                                    @foreach (var forecast in forecasts)
+                                    {
+                                        <td class="forecast-weather-cell">@forecast.WeatherDescription</td>
+                                    }
+                                </tr>
+                                <tr>
+                                    <td><strong>Temperature</strong></td>
+                                    @foreach (var forecast in forecasts)
+                                    {
+                                        <td class="forecast-temp-cell">
+                                            <span class="temp-max">@forecast.MaxTemp.ToString("F1")°C</span>
+                                            <span class="temp-min">@forecast.MinTemp.ToString("F1")°C</span>
+                                        </td>
+                                    }
+                                </tr>
+                                <tr>
+                                    <td><strong>Precipitation</strong></td>
+                                    @foreach (var forecast in forecasts)
+                                    {
+                                        <td>@forecast.Precipitation.ToString("F1") mm</td>
+                                    }
+                                </tr>
+                                <tr>
+                                    <td><strong>Wind Speed</strong></td>
+                                    @foreach (var forecast in forecasts)
+                                    {
+                                        <td>@forecast.WindSpeed.ToString("F1") km/h</td>
+                                    }
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            @if (!searchResults.Any() && selectedCity == null && !forecasts.Any() && string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="search-results">
+                    <h2 class="search-results-title">Welcome to Weather Dashboard</h2>
+                    <p style="text-align: center; color: var(--text-primary); opacity: 0.7; font-size: 1.1rem; margin: 2rem 0;">
+                        Search for a city to view its 5-day weather forecast.<br />
+                        Add cities to your favorites for quick access!
+                    </p>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+@code {
+    private List<GeocodingResult> searchResults = new();
+    private List<DailyForecast> forecasts = new();
+    private List<GeocodingResult> favoriteCities = new();
+    private GeocodingResult? selectedCity;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFavorites();
+    }
+
+    private async Task LoadFavorites()
+    {
+        favoriteCities = await FavoritesService.GetFavoritesAsync();
+        StateHasChanged();
+    }
+
+    private void HandleSearchResults(List<GeocodingResult> results)
+    {
+        searchResults = new List<GeocodingResult>(results);
+        errorMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private void HandleSearchError(string error)
+    {
+        errorMessage = error;
+        if (!string.IsNullOrEmpty(error))
+        {
+            searchResults.Clear();
+        }
+    }
+
+    private bool IsCityFavorite(GeocodingResult city)
+    {
+        return favoriteCities.Any(f => f.Latitude == city.Latitude && f.Longitude == city.Longitude);
+    }
+
+    private async Task ToggleFavorite(GeocodingResult city)
+    {
+        if (IsCityFavorite(city))
+        {
+            await FavoritesService.RemoveFavoriteAsync(city);
+        }
+        else
+        {
+            await FavoritesService.AddFavoriteAsync(city);
+        }
+        await LoadFavorites();
+    }
+
+    private async Task SelectCity(GeocodingResult city)
+    {
+        try
+        {
+            errorMessage = string.Empty;
+            isLoading = true;
+            selectedCity = city;
+            searchResults.Clear(); // Hide search results after selection
+
+            forecasts = await WeatherService.GetForecastAsync(city.Latitude, city.Longitude);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            forecasts.Clear();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

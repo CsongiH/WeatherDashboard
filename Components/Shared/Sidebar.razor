@@ -1,0 +1,60 @@
+@using WeatherDashboard.Models
+@using WeatherDashboard.Services
+@inject FavoritesService FavoritesService
+
+<aside class="sidebar">
+    <div class="sidebar-title">Favorite Cities</div>
+
+    @if (!favoriteCities.Any())
+    {
+        <div class="sidebar-empty">
+            No favorite cities yet.<br />
+            Search for a city and add it to favorites!
+        </div>
+    }
+    else
+    {
+        <div class="sidebar-list">
+            @foreach (var city in favoriteCities)
+            {
+                <div class="sidebar-item" @onclick="() => OnCitySelected.InvokeAsync(city)">
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-name">@city.Name</div>
+                        <div class="sidebar-item-details">
+                            @if (!string.IsNullOrEmpty(city.Admin1))
+                            {
+                                <span>@city.Admin1, </span>
+                            }
+                            <span>@city.Country</span>
+                        </div>
+                    </div>
+                    <button class="sidebar-item-remove"
+                            @onclick:stopPropagation="true"
+                            @onclick="() => RemoveFavorite(city)"
+                            title="Remove from favorites">
+                        ★
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</aside>
+
+@code {
+    [Parameter]
+    public EventCallback<GeocodingResult> OnCitySelected { get; set; }
+
+    [Parameter]
+    public List<GeocodingResult> FavoriteCities { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnFavoritesChanged { get; set; }
+
+    private List<GeocodingResult> favoriteCities => FavoriteCities;
+
+    private async Task RemoveFavorite(GeocodingResult city)
+    {
+        await FavoritesService.RemoveFavoriteAsync(city);
+        await OnFavoritesChanged.InvokeAsync();
+    }
+}
