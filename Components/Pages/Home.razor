@@ -142,6 +142,8 @@
     private void HandleSearchResults(List<GeocodingResult> results)
     {
         searchResults = new List<GeocodingResult>(results);
+        forecasts.Clear();
+        selectedCity = null;
         errorMessage = string.Empty;
         StateHasChanged();
     }
