@@ -1,11 +1,43 @@
-﻿@page "/Error"
+@*
+============================================================================
+Error.razor
+
+Purpose: Error page displayed when unhandled exceptions occur
+Route: /Error (configured in Program.cs exception handler)
+
+Features:
+- Displays generic error message to users
+- Shows request ID for debugging
+- Provides guidance for enabling development mode
+- Hungarian localized messages
+
+How it works:
+1. Program.cs redirects to /Error on unhandled exceptions
+2. Page shows user-friendly error message
+3. Request ID helps developers trace the error in logs
+4. Development mode info helps developers debug locally
+
+Note: This page is for unexpected errors. Expected errors (network issues,
+validation, etc.) are handled within components with friendly messages.
+============================================================================
+*@
+
+@* Route: This page is accessible at /Error URL *@
+@page "/Error"
+
+@* System.Diagnostics for Activity.Current (distributed tracing) *@
 @using System.Diagnostics
 
+@* Page title shown in browser tab *@
 <PageTitle>Hiba</PageTitle>
 
+@* Main error heading *@
 <h1 class="text-danger">Hiba.</h1>
 <h2 class="text-danger">Hiba történt a kérés feldolgozása során.</h2>
 
+@* Conditionally display request ID if available
+    RequestId helps developers correlate this error with server logs
+*@
 @if (ShowRequestId)
 {
     <p>
@@ -13,6 +45,7 @@
     </p>
 }
 
+@* Development mode information section *@
 <h3>Fejlesztői mód</h3>
 <p>
     A <strong>Development</strong> környezetre váltás részletesebb információkat jelenít meg a fellépett hibáról.
@@ -25,12 +58,29 @@
 </p>
 
 @code {
+    // ======= CASCADING PARAMETERS =======
+
+    // HttpContext: Provided by Blazor Server, contains request information
+    // CascadingParameter allows parent components to pass values to descendants
+    // Nullable because it may not be available in all scenarios
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
+    // ======= COMPONENT STATE =======
+
+    // Request ID for tracing this error in logs
+    // Can come from Activity (distributed tracing) or HttpContext (ASP.NET Core)
     private string? RequestId { get; set; }
+
+    // Computed property: Show request ID section only if we have an ID
     private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
+    // ======= LIFECYCLE METHODS =======
+
+    // OnInitialized: Called when component is first created
+    // Gets request ID from two possible sources:
+    // 1. Activity.Current.Id - Distributed tracing ID (preferred)
+    // 2. HttpContext.TraceIdentifier - ASP.NET Core request ID (fallback)
     protected override void OnInitialized() =>
         RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
 }

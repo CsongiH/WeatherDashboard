@@ -1,22 +1,64 @@
+@*
+============================================================================
+Navbar.razor
+
+Purpose: Top navigation bar with search functionality and theme toggle
+Location: Top of the page (fixed position)
+
+Features:
+- App title/branding
+- City search input with real-time binding
+- Search button with loading state
+- Enter key support for search
+- Theme toggle button
+- Communicates search results/errors to parent via EventCallbacks
+
+Component Communication:
+- Child notifies parent (Home.razor) via EventCallbacks:
+  * OnSearchResults: Passes list of matching cities
+  * OnSearchError: Passes error messages to display
+============================================================================
+*@
+
+@* Namespace imports for models and services *@
 @using WeatherDashboard.Models
 @using WeatherDashboard.Services
+
+@* Inject WeatherService for city search API calls *@
 @inject WeatherService WeatherService
 
+@* Navigation bar container - styled by app.css *@
 <nav class="navbar">
+    @* App branding/title *@
     <div class="navbar-brand">Időjárás Dashboard</div>
 
+    @* Search section: Input + button *@
     <div class="navbar-search">
+        @* Search input
+            @bind: Two-way data binding with searchQuery field
+            @bind:event="oninput": Update searchQuery on every keystroke (not just on blur)
+            @onkeypress: Handle Enter key to trigger search
+            aria-label: Accessibility label for screen readers
+        *@
         <input type="text"
                @bind="searchQuery"
                @bind:event="oninput"
                @onkeypress="HandleKeyPress"
                placeholder="Város keresése..."
                aria-label="Városkeresés" />
+
+        @* Search button
+            @onclick: Trigger search when clicked
+            disabled: Prevent clicking while search is in progress
+            Button text changes based on loading state
+        *@
         <button @onclick="SearchCity" disabled="@isLoading">
+            @* Loading state: Show "Keresés..." while API call is in progress *@
             @if (isLoading)
             {
                 <span>Keresés...</span>
             }
+            @* Ready state: Show "Keresés" when ready to search *@
             else
             {
                 <span>Keresés</span>
@@ -24,62 +66,109 @@
         </button>
     </div>
 
+    @* Right side actions: Theme toggle button *@
     <div class="navbar-actions">
         <ThemeToggle />
     </div>
 </nav>
 
 @code {
+    // ======= PARAMETERS (OUTPUT TO PARENT) =======
+
+    // EventCallback: Passes search results to parent (Home.razor)
+    // Parent displays these results as clickable city cards
     [Parameter]
     public EventCallback<List<GeocodingResult>> OnSearchResults { get; set; }
 
+    // EventCallback: Passes error messages to parent (Home.razor)
+    // Parent displays errors in a red error message box
     [Parameter]
     public EventCallback<string> OnSearchError { get; set; }
 
+    // ======= COMPONENT STATE =======
+
+    // Current search query text entered by user
+    // Bound to input field with @bind directive
     private string searchQuery = string.Empty;
+
+    // Loading state: true while API call is in progress
+    // Used to disable button and show loading text
     private bool isLoading = false;
 
+    // ======= SEARCH LOGIC =======
+
+    // Perform city search via WeatherService
+    // Called when user clicks Search button or presses Enter
     private async Task SearchCity()
     {
+        // Step 1: Validate input - require non-empty city name
         if (string.IsNullOrWhiteSpace(searchQuery))
         {
+            // Notify parent to display validation error
             await OnSearchError.InvokeAsync("Kérjük, adjon meg egy városnevet.");
-            return;
+            return; // Exit early, don't make API call
         }
 
         try
         {
+            // Step 2: Set loading state
             isLoading = true;
+
+            // Step 3: Clear any previous error messages
             await OnSearchError.InvokeAsync(string.Empty);
 
+            // Step 4: Call WeatherService to search for cities
+            // This makes API call to Open-Meteo geocoding API
+            // Returns up to 5 matching cities
             var results = await WeatherService.SearchCitiesAsync(searchQuery);
 
+            // Step 5: Check if any cities were found
             if (!results.Any())
             {
+                // No results: Notify parent to display "not found" message
                 await OnSearchError.InvokeAsync($"Nem található város a '{searchQuery}' keresésre. Kérjük, próbáljon más keresést.");
+
+                // Also send empty results list to parent
                 await OnSearchResults.InvokeAsync(new List<GeocodingResult>());
             }
             else
             {
+                // Results found: Send results to parent
+                // Parent will display these as clickable city cards
                 await OnSearchResults.InvokeAsync(results);
             }
         }
         catch (Exception ex)
         {
+            // Step 6: Handle errors (network issues, API failures, etc.)
+            // Send error message to parent for display
             await OnSearchError.InvokeAsync(ex.Message);
+
+            // Also send empty results list to parent
             await OnSearchResults.InvokeAsync(new List<GeocodingResult>());
         }
         finally
         {
+            // Step 7: Always reset loading state when done
+            // This re-enables the button regardless of success/failure
             isLoading = false;
         }
     }
 
+    // ======= KEYBOARD SUPPORT =======
+
+    // Handle keyboard events on search input
+    // Parameters: e - keyboard event args containing key information
+    // Called on every keypress in the search input
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
+        // Check if Enter key was pressed AND not currently loading
+        // This allows users to search by pressing Enter instead of clicking button
         if (e.Key == "Enter" && !isLoading)
         {
+            // Trigger search
             await SearchCity();
         }
+        // Other keys are ignored, they just update the searchQuery via @bind
     }
 }

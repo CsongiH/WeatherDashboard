@@ -1,7 +1,40 @@
+@*
+============================================================================
+MainLayout.razor
+
+Purpose: Main layout wrapper for all pages in the application
+Every page uses this layout unless explicitly specified otherwise
+
+Structure:
+- @Body directive: Placeholder where page content is rendered
+- Error UI: Displays when unhandled errors occur in components
+
+How it works:
+1. RouteView in Routes.razor specifies this as DefaultLayout
+2. When page loads, @Body is replaced with page content
+3. Layout provides consistent structure across all pages
+4. Error UI appears at bottom of screen when Blazor encounters errors
+
+Note: This layout is minimal - no navigation/header/footer
+All UI structure is handled within page components (Home.razor)
+============================================================================
+*@
+
+@* Inherit from LayoutComponentBase to enable layout functionality *@
 @inherits LayoutComponentBase
 
+@* @Body directive: Replaced with the content of the page being rendered
+    Example: When user visits "/", Home.razor content appears here
+*@
 @Body
 
+@* Blazor error UI: Appears at bottom of screen when unhandled errors occur
+    Features:
+    - Displays error message in Hungarian
+    - Reload link: Refreshes the page to recover from error
+    - Dismiss link (🗙): Hides the error UI without reloading
+    - Styled by MainLayout.razor.css (scoped styles)
+*@
 <div id="blazor-error-ui">
     Kezeletlen hiba történt.
     <a href="" class="reload">Újratöltés</a>

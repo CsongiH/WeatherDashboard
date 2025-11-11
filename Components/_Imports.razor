@@ -1,6 +1,32 @@
-﻿@using Microsoft.AspNetCore.Components.Routing
+@*
+============================================================================
+_Imports.razor
+
+Purpose: Global using statements for all Blazor components
+These namespaces are automatically available in all .razor files
+without needing explicit @using directives in each file
+
+Benefits:
+- Reduces boilerplate in component files
+- Ensures consistency across all components
+- Centralized namespace management
+============================================================================
+*@
+
+@* Routing components: Router, NavLink, etc. *@
+@using Microsoft.AspNetCore.Components.Routing
+
+@* Core Blazor web components: EventCallback, RenderFragment, etc. *@
 @using Microsoft.AspNetCore.Components.Web
+
+@* Render mode directives: InteractiveServer, InteractiveAuto, etc. *@
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
+
+@* JavaScript interop: IJSRuntime for calling JS from C# *@
 @using Microsoft.JSInterop
+
+@* Root namespace: Access to Program, Services, etc. *@
 @using WeatherDashboard
+
+@* Components namespace: Access to shared components, layouts, pages *@
 @using WeatherDashboard.Components

@@ -1,10 +1,38 @@
+@*
+============================================================================
+Sidebar.razor
+
+Purpose: Left sidebar displaying user's favorite cities
+Location: Left side of main layout (fixed position)
+
+Features:
+- Displays list of user's favorite cities from localStorage
+- Click city to load weather forecast
+- Remove button (★) to delete city from favorites
+- Empty state message when no favorites exist
+- Communicates with parent (Home.razor) via EventCallbacks
+
+Component Communication:
+- Parent passes FavoriteCities list down via Parameter
+- Child notifies parent via EventCallbacks when:
+  * City is clicked (OnCitySelected)
+  * City is removed (OnFavoritesChanged)
+============================================================================
+*@
+
+@* Namespace imports for models and services *@
 @using WeatherDashboard.Models
 @using WeatherDashboard.Services
+
+@* Inject FavoritesService for removing favorites *@
 @inject FavoritesService FavoritesService
 
+@* Sidebar container - styled by app.css *@
 <aside class="sidebar">
+    @* Sidebar title/header *@
     <div class="sidebar-title">Kedvenc városok</div>
 
+    @* Empty state: Show when user has no favorites yet *@
     @if (!FavoriteCities.Any())
     {
         <div class="sidebar-empty">
@@ -12,22 +40,40 @@
             Keressen egy várost és adja hozzá a kedvencekhez!
         </div>
     }
+    @* Favorites list: Show when user has at least one favorite *@
     else
     {
         <div class="sidebar-list">
+            @* Loop through each favorite city and render a card *@
             @foreach (var city in FavoriteCities)
             {
+                @* City card: Clickable to load weather, contains city info and remove button
+                    @onclick: Notify parent that this city was selected
+                    Parent (Home.razor) will load weather for this city
+                *@
                 <div class="sidebar-item" @onclick="() => OnCitySelected.InvokeAsync(city)">
+                    @* City information *@
                     <div class="sidebar-item-content">
+                        @* City name (e.g., "Budapest") *@
                         <div class="sidebar-item-name">@city.Name</div>
+
+                        @* City details: Admin1 (state/region) and Country *@
                         <div class="sidebar-item-details">
+                            @* Admin1 is optional - only show if available *@
                             @if (!string.IsNullOrEmpty(city.Admin1))
                             {
                                 <span>@city.Admin1, </span>
                             }
+                            @* Country always shown *@
                             <span>@city.Country</span>
                         </div>
                     </div>
+
+                    @* Remove button: Delete city from favorites
+                        @onclick:stopPropagation="true": Prevents event bubbling
+                        Without this, clicking remove would also trigger city selection
+                        Title attribute: Tooltip text on hover
+                    *@
                     <button class="sidebar-item-remove"
                             @onclick:stopPropagation="true"
                             @onclick="() => RemoveFavorite(city)"
@@ -41,18 +87,39 @@
 </aside>
 
 @code {
+    // ======= PARAMETERS (INPUT FROM PARENT) =======
+
+    // EventCallback: Parent (Home.razor) provides this callback
+    // When user clicks a city, this callback is invoked with the city data
+    // Parent handles loading weather forecast for the selected city
     [Parameter]
     public EventCallback<GeocodingResult> OnCitySelected { get; set; }
 
+    // List of user's favorite cities passed down from parent
+    // Parent (Home.razor) loads this from FavoritesService on initialization
+    // Defaults to empty list if parent doesn't provide value
     [Parameter]
     public List<GeocodingResult> FavoriteCities { get; set; } = new();
 
+    // EventCallback: Notifies parent when favorites list changes
+    // Parent should reload favorites from localStorage after removal
+    // This keeps the sidebar and parent state in sync
     [Parameter]
     public EventCallback OnFavoritesChanged { get; set; }
 
+    // ======= EVENT HANDLERS =======
+
+    // Remove a city from the favorites list
+    // Parameters: city - the city to remove
+    // Called when user clicks the remove button (★)
     private async Task RemoveFavorite(GeocodingResult city)
     {
+        // Step 1: Remove city from localStorage via FavoritesService
         await FavoritesService.RemoveFavoriteAsync(city);
+
+        // Step 2: Notify parent that favorites have changed
+        // Parent will reload favorites list from localStorage
+        // This updates the sidebar to show the new list without removed city
         await OnFavoritesChanged.InvokeAsync();
     }
 }

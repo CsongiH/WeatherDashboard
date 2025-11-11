@@ -1,6 +1,38 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+@*
+============================================================================
+Routes.razor
+
+Purpose: Blazor router configuration for the application
+Handles URL routing and navigation between pages
+
+Features:
+- Routes to pages with @page directives
+- Applies default layout to all pages
+- Manages focus for accessibility on navigation
+- Redirects unknown routes to homepage (via Program.cs fallback)
+
+How it works:
+1. Router scans Program.Assembly for components with @page directive
+2. When route matches, displays component in RouteView
+3. FocusOnNavigate improves accessibility by focusing first h1
+============================================================================
+*@
+
+@* Router component: Scans assembly for @page directives and handles navigation *@
+<Router AppAssembly="typeof(Program).Assembly">
+    @* Found: Executes when a matching route is found *@
     <Found Context="routeData">
+        @* RouteView: Renders the matched page component
+            - RouteData: Contains matched component and parameters
+            - DefaultLayout: Wraps page in MainLayout.razor
+        *@
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+
+        @* FocusOnNavigate: Accessibility feature
+            - Automatically focuses the first h1 element after navigation
+            - Helps screen readers announce page changes
+            - Improves keyboard navigation experience
+        *@
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>

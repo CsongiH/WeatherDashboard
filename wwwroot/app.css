@@ -1,628 +1,794 @@
+/* ============================================================================
+   app.css
+
+   Purpose: Complete stylesheet for Weather Dashboard application
+   Implements: Light/Dark theme support via CSS variables and data-theme attribute
+
+   Structure:
+   1. CSS Variables (Light Theme) - Default color scheme
+   2. Dark Theme Overrides - Applied when body[data-theme="dark"]
+   3. Global Styles - Base element styling
+   4. Layout Structure - Grid-based layout with navbar, sidebar, main content
+   5. Navbar Styles - Top bar with search and theme toggle
+   6. Sidebar Styles - Left panel with favorite cities
+   7. Main Content Styles - Right panel with forecasts
+   8. Search Results Section - City cards with favorite buttons
+   9. Forecast Section - Tables and cards for weather data
+   10. Hourly Forecast Styles - Horizontal scrollable cards
+   11. Responsive Design - Mobile and tablet breakpoints
+   12. Scrollbar Styling - Custom scrollbar for hourly forecast
+
+   Theme System:
+   - CSS variables defined in :root for light theme
+   - body[data-theme="dark"] overrides variables for dark theme
+   - JavaScript (theme.js) toggles data-theme attribute on <body>
+   - All colors reference var(--variable-name) for automatic theme switching
+   ============================================================================ */
+
+/* Remove focus outline from h1 elements */
 h1:focus {
     outline: none;
 }
 
-/* Weather Dashboard Styles */
+/* ============================================================================
+   CSS VARIABLES - LIGHT THEME (DEFAULT)
+   These variables define the color scheme and layout dimensions
+   All colors are referenced throughout the CSS using var(--variable-name)
+   ============================================================================ */
 :root {
-    --navbar-height: 70px;
-    --sidebar-width: 280px;
-    --bg-color: #f0f2f5;
-    --text-primary: #333;
-    --text-light: #333;
-    --card-bg: white;
-    --card-border: #e0e0e0;
-    --card-hover: #f5f5f5;
-    --accent-color: #667eea;
-    --error-bg: #f44336;
-    --navbar-bg: rgba(255, 255, 255, 0.95);
-    --sidebar-bg: rgba(255, 255, 255, 0.98);
+    /* Layout dimensions */
+    --navbar-height: 70px;        /* Fixed height of top navigation bar */
+    --sidebar-width: 280px;       /* Fixed width of left sidebar */
+
+    /* Light theme colors */
+    --bg-color: #f0f2f5;          /* Page background - light gray */
+    --text-primary: #333;         /* Primary text color - dark gray */
+    --text-light: #333;           /* Light text color - same as primary */
+    --card-bg: white;             /* Background for cards/panels */
+    --card-border: #e0e0e0;       /* Border color for cards */
+    --card-hover: #f5f5f5;        /* Background when hovering over cards */
+    --accent-color: #667eea;      /* Primary accent color - purple/blue */
+    --error-bg: #f44336;          /* Error message background - red */
+    --navbar-bg: rgba(255, 255, 255, 0.95);    /* Navbar background with transparency */
+    --sidebar-bg: rgba(255, 255, 255, 0.98);   /* Sidebar background with transparency */
 }
 
+/* ============================================================================
+   DARK THEME OVERRIDES
+   Applied when body has data-theme="dark" attribute
+   Overrides :root variables with dark color scheme
+   Set by JavaScript: document.body.setAttribute('data-theme', 'dark')
+   ============================================================================ */
 body[data-theme="dark"] {
-    --bg-color: #1a1a2e;
-    --text-primary: #e0e0e0;
-    --text-light: #e0e0e0;
-    --card-bg: #0f3460;
-    --card-border: #1a4d7a;
-    --card-hover: #1a5490;
-    --accent-color: #53a8e2;
-    --error-bg: #d32f2f;
-    --navbar-bg: rgba(15, 52, 96, 0.95);
-    --sidebar-bg: rgba(15, 52, 96, 0.98);
+    --bg-color: #1a1a2e;          /* Page background - dark blue/black */
+    --text-primary: #e0e0e0;      /* Primary text color - light gray */
+    --text-light: #e0e0e0;        /* Light text color - light gray */
+    --card-bg: #0f3460;           /* Background for cards/panels - dark blue */
+    --card-border: #1a4d7a;       /* Border color for cards - medium blue */
+    --card-hover: #1a5490;        /* Background when hovering - lighter blue */
+    --accent-color: #53a8e2;      /* Primary accent color - light blue */
+    --error-bg: #d32f2f;          /* Error message background - dark red */
+    --navbar-bg: rgba(15, 52, 96, 0.95);     /* Navbar background - dark blue with transparency */
+    --sidebar-bg: rgba(15, 52, 96, 0.98);    /* Sidebar background - dark blue with transparency */
 }
 
+/* ============================================================================
+   GLOBAL STYLES
+   Base styling applied to all elements
+   ============================================================================ */
+
+/* Apply border-box sizing to all elements for easier layout calculations */
 * {
     box-sizing: border-box;
 }
 
+/* Body element - main page container */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-color);
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    transition: background 0.3s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  /* Modern sans-serif font stack */
+    background: var(--bg-color);                                    /* Background color from CSS variables */
+    margin: 0;                                                      /* Remove default margin */
+    padding: 0;                                                     /* Remove default padding */
+    min-height: 100vh;                                              /* Minimum height = full viewport */
+    transition: background 0.3s ease;                               /* Smooth transition when theme changes */
 }
 
-/* Layout Structure */
+/* ============================================================================
+   LAYOUT STRUCTURE
+   CSS Grid layout with navbar, sidebar, and main content areas
+   Grid areas: navbar (top), sidebar (left), main (right)
+   ============================================================================ */
 .app-container {
-    display: grid;
-    grid-template-areas:
-        "navbar navbar"
-        "sidebar main";
-    grid-template-columns: var(--sidebar-width) 1fr;
-    grid-template-rows: var(--navbar-height) 1fr;
-    min-height: 100vh;
+    display: grid;                                  /* Use CSS Grid for layout */
+    grid-template-areas:                            /* Define named grid areas */
+        "navbar navbar"                             /* Navbar spans full width */
+        "sidebar main";                             /* Sidebar left, main content right */
+    grid-template-columns: var(--sidebar-width) 1fr;  /* Sidebar fixed width, main takes remaining space */
+    grid-template-rows: var(--navbar-height) 1fr;   /* Navbar fixed height, main takes remaining height */
+    min-height: 100vh;                              /* Full viewport height */
 }
 
-/* Navbar Styles */
+/* ============================================================================
+   NAVBAR STYLES
+   Top navigation bar with search functionality and theme toggle
+   Fixed position at top of page
+   ============================================================================ */
 .navbar {
-    grid-area: navbar;
-    background: var(--navbar-bg);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
-    position: fixed;
+    grid-area: navbar;                              /* Place in navbar grid area */
+    background: var(--navbar-bg);                   /* Semi-transparent background */
+    backdrop-filter: blur(10px);                    /* Blur effect for glassmorphism */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);      /* Subtle drop shadow */
+    display: flex;                                  /* Flexbox for horizontal layout */
+    align-items: center;                            /* Vertically center items */
+    justify-content: space-between;                 /* Space items evenly */
+    padding: 0 2rem;                                /* Horizontal padding */
+    position: fixed;                                /* Fixed position at top */
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
-    height: var(--navbar-height);
+    z-index: 1000;                                  /* Above other content */
+    height: var(--navbar-height);                   /* Fixed height */
 }
 
+/* Navbar brand/title */
 .navbar-brand {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--text-primary);
-    text-decoration: none;
-    white-space: nowrap;
+    font-size: 1.5rem;                              /* Large text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    text-decoration: none;                          /* Remove underline */
+    white-space: nowrap;                            /* Prevent text wrapping */
 }
 
+/* Navbar search section - input and button */
 .navbar-search {
-    flex: 1;
-    max-width: 600px;
-    display: flex;
-    gap: 0.75rem;
-    margin: 0 2rem;
+    flex: 1;                                        /* Take available space */
+    max-width: 600px;                               /* Maximum width constraint */
+    display: flex;                                  /* Flexbox for horizontal layout */
+    gap: 0.75rem;                                   /* Space between input and button */
+    margin: 0 2rem;                                 /* Horizontal margins */
 }
 
+/* Search input field */
 .navbar-search input {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 2px solid var(--card-border);
-    border-radius: 8px;
-    font-size: 1rem;
-    background: var(--card-bg);
-    color: var(--text-primary);
-    transition: all 0.3s;
+    flex: 1;                                        /* Take available space */
+    padding: 0.75rem 1rem;                          /* Internal spacing */
+    border: 2px solid var(--card-border);           /* Theme-aware border */
+    border-radius: 8px;                             /* Rounded corners */
+    font-size: 1rem;                                /* Standard text size */
+    background: var(--card-bg);                     /* Theme-aware background */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    transition: all 0.3s;                           /* Smooth transitions */
 }
 
+/* Search input focus state */
 .navbar-search input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;                                  /* Remove default focus outline */
+    border-color: var(--accent-color);              /* Accent color border */
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);  /* Focus ring effect */
 }
 
+/* Search button */
 .navbar-search button {
-    padding: 0.75rem 1.5rem;
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    white-space: nowrap;
+    padding: 0.75rem 1.5rem;                        /* Internal spacing */
+    background: var(--accent-color);                /* Accent color background */
+    color: white;                                   /* White text */
+    border: none;                                   /* Remove border */
+    border-radius: 8px;                             /* Rounded corners */
+    font-size: 1rem;                                /* Standard text size */
+    cursor: pointer;                                /* Pointer cursor on hover */
+    transition: all 0.3s;                           /* Smooth transitions */
+    white-space: nowrap;                            /* Prevent text wrapping */
 }
 
+/* Search button hover state (only when not disabled) */
 .navbar-search button:hover:not(:disabled) {
-    background: #5568d3;
-    transform: translateY(-1px);
+    background: #5568d3;                            /* Darker shade on hover */
+    transform: translateY(-1px);                    /* Slight lift effect */
 }
 
+/* Search button disabled state */
 .navbar-search button:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
+    background: #cccccc;                            /* Gray background */
+    cursor: not-allowed;                            /* Not-allowed cursor */
 }
 
+/* Navbar right side actions (theme toggle button) */
 .navbar-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
+    display: flex;                                  /* Flexbox layout */
+    gap: 1rem;                                      /* Space between items */
+    align-items: center;                            /* Vertically center */
 }
 
+/* Theme toggle button (sun/moon icon) */
 .theme-toggle-btn {
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    font-size: 1.3rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--card-bg);                     /* Theme-aware background */
+    border: 2px solid var(--card-border);           /* Theme-aware border */
+    border-radius: 50%;                             /* Circular shape */
+    width: 45px;                                    /* Fixed width */
+    height: 45px;                                   /* Fixed height */
+    font-size: 1.3rem;                              /* Icon size */
+    cursor: pointer;                                /* Pointer cursor */
+    transition: all 0.3s;                           /* Smooth transitions */
+    display: flex;                                  /* Flexbox for centering */
+    align-items: center;                            /* Vertically center icon */
+    justify-content: center;                        /* Horizontally center icon */
 }
 
+/* Theme toggle button hover state */
 .theme-toggle-btn:hover {
-    transform: scale(1.1);
-    border-color: var(--accent-color);
+    transform: scale(1.1);                          /* Slight zoom effect */
+    border-color: var(--accent-color);              /* Accent color border */
 }
 
-/* Sidebar Styles */
+/* ============================================================================
+   SIDEBAR STYLES
+   Left panel displaying user's favorite cities
+   Fixed position, scrollable content
+   ============================================================================ */
 .sidebar {
-    grid-area: sidebar;
-    background: var(--sidebar-bg);
-    backdrop-filter: blur(10px);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    overflow-y: auto;
-    position: fixed;
-    top: var(--navbar-height);
-    left: 0;
-    bottom: 0;
-    width: var(--sidebar-width);
+    grid-area: sidebar;                             /* Place in sidebar grid area */
+    background: var(--sidebar-bg);                  /* Semi-transparent background */
+    backdrop-filter: blur(10px);                    /* Blur effect for glassmorphism */
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);      /* Right-side drop shadow */
+    padding: 1.5rem;                                /* Internal spacing */
+    overflow-y: auto;                               /* Vertical scrolling */
+    position: fixed;                                /* Fixed position */
+    top: var(--navbar-height);                      /* Below navbar */
+    left: 0;                                        /* Aligned to left */
+    bottom: 0;                                      /* Extend to bottom */
+    width: var(--sidebar-width);                    /* Fixed width */
 }
 
+/* Sidebar title/header */
 .sidebar-title {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: var(--text-primary);
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--card-border);
+    font-size: 1.25rem;                             /* Large text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-bottom: 1rem;                            /* Space below */
+    padding-bottom: 0.75rem;                        /* Internal bottom padding */
+    border-bottom: 2px solid var(--card-border);    /* Bottom border separator */
 }
 
+/* Empty state message (no favorites yet) */
 .sidebar-empty {
-    color: var(--text-primary);
-    opacity: 0.6;
-    font-size: 0.9rem;
-    text-align: center;
-    padding: 2rem 0;
+    color: var(--text-primary);                     /* Theme-aware text color */
+    opacity: 0.6;                                   /* Slightly transparent */
+    font-size: 0.9rem;                              /* Smaller text */
+    text-align: center;                             /* Centered text */
+    padding: 2rem 0;                                /* Vertical padding */
 }
 
+/* Container for favorite city list */
 .sidebar-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    display: flex;                                  /* Flexbox layout */
+    flex-direction: column;                         /* Vertical stacking */
+    gap: 0.75rem;                                   /* Space between items */
 }
 
+/* Individual favorite city card */
 .sidebar-item {
-    padding: 1rem;
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: 1rem;                                  /* Internal spacing */
+    background: var(--card-bg);                     /* Theme-aware background */
+    border: 2px solid var(--card-border);           /* Theme-aware border */
+    border-radius: 8px;                             /* Rounded corners */
+    cursor: pointer;                                /* Pointer cursor */
+    transition: all 0.3s;                           /* Smooth transitions */
+    display: flex;                                  /* Flexbox layout */
+    justify-content: space-between;                 /* Space between content and remove button */
+    align-items: center;                            /* Vertically center */
 }
 
+/* Sidebar item hover state */
 .sidebar-item:hover {
-    border-color: var(--accent-color);
-    transform: translateX(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent-color);              /* Accent color border */
+    transform: translateX(4px);                     /* Slight slide right effect */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);       /* Drop shadow */
 }
 
+/* City information section */
 .sidebar-item-content {
-    flex: 1;
+    flex: 1;                                        /* Take available space */
 }
 
+/* City name */
 .sidebar-item-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    font-size: 1rem;                                /* Standard text size */
+    font-weight: 600;                               /* Semi-bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-bottom: 0.25rem;                         /* Space below */
 }
 
+/* City details (region, country) */
 .sidebar-item-details {
-    font-size: 0.85rem;
-    color: var(--text-primary);
-    opacity: 0.7;
+    font-size: 0.85rem;                             /* Smaller text */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    opacity: 0.7;                                   /* Slightly transparent */
 }
 
+/* Remove favorite button (star icon) */
 .sidebar-item-remove {
-    background: none;
-    border: none;
-    font-size: 1.3rem;
-    color: #ffd700;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    transition: transform 0.2s;
+    background: none;                               /* No background */
+    border: none;                                   /* No border */
+    font-size: 1.3rem;                              /* Icon size */
+    color: #ffd700;                                 /* Gold color for star */
+    cursor: pointer;                                /* Pointer cursor */
+    padding: 0.25rem 0.5rem;                        /* Small padding */
+    transition: transform 0.2s;                     /* Smooth scale transition */
 }
 
+/* Remove button hover state */
 .sidebar-item-remove:hover {
-    transform: scale(1.2);
+    transform: scale(1.2);                          /* Zoom effect */
 }
 
-/* Main Content Styles */
+/* ============================================================================
+   MAIN CONTENT STYLES
+   Right panel displaying search results and weather forecasts
+   ============================================================================ */
 .main-content {
-    grid-area: main;
-    padding: 1.5rem 0.75rem 0.75rem 0.75rem;
-    margin-top: 0;
-    overflow-y: auto;
+    grid-area: main;                                /* Place in main grid area */
+    padding: 1.5rem 0.75rem 0.75rem 0.75rem;       /* Spacing around content */
+    margin-top: 0;                                  /* No top margin */
+    overflow-y: auto;                               /* Vertical scrolling */
 }
 
+/* Content wrapper - centers and constrains width */
 .content-wrapper {
-    width: 100%;
-    margin: 0 auto;
+    width: 100%;                                    /* Full width */
+    margin: 0 auto;                                 /* Center horizontally */
 }
 
+/* Error message box */
 .error-message {
-    background: var(--error-bg);
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: var(--error-bg);                    /* Red background */
+    color: white;                                   /* White text */
+    padding: 1rem 1.5rem;                           /* Internal spacing */
+    border-radius: 8px;                             /* Rounded corners */
+    margin-bottom: 1.5rem;                          /* Space below */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);       /* Drop shadow */
 }
 
-/* Search Results Section */
+/* ============================================================================
+   SEARCH RESULTS SECTION
+   Displays city cards after user searches for a city
+   ============================================================================ */
 .search-results {
-    padding: 0;
-    margin-bottom: 1rem;
+    padding: 0;                                     /* No padding */
+    margin-bottom: 1rem;                            /* Space below */
 }
 
+/* Search results title */
 .search-results-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--text-primary);
-    margin-top: 0;
-    margin-bottom: 1.5rem;
+    font-size: 1.5rem;                              /* Large text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-top: 0;                                  /* No top margin */
+    margin-bottom: 1.5rem;                          /* Space below */
 }
 
+/* Grid container for city cards */
 .search-results-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    display: flex;                                  /* Flexbox layout */
+    flex-direction: column;                         /* Vertical stacking */
+    gap: 1rem;                                      /* Space between cards */
 }
 
+/* Individual city card */
 .city-card {
-    padding: 1.25rem;
-    border: 2px solid var(--card-border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: 1.25rem;                               /* Internal spacing */
+    border: 2px solid var(--card-border);           /* Theme-aware border */
+    border-radius: 8px;                             /* Rounded corners */
+    cursor: pointer;                                /* Pointer cursor */
+    transition: all 0.3s;                           /* Smooth transitions */
+    display: flex;                                  /* Flexbox layout */
+    justify-content: space-between;                 /* Space between content and favorite button */
+    align-items: center;                            /* Vertically center */
 }
 
+/* City card hover state */
 .city-card:hover {
-    border-color: var(--accent-color);
-    background: var(--card-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-color);              /* Accent color border */
+    background: var(--card-hover);                  /* Hover background color */
+    transform: translateY(-2px);                    /* Slight lift effect */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);     /* Drop shadow */
 }
 
+/* City information section */
 .city-card-content {
-    flex: 1;
+    flex: 1;                                        /* Take available space */
 }
 
+/* City name */
 .city-name {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    font-size: 1.25rem;                             /* Large text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-bottom: 0.5rem;                          /* Space below */
 }
 
+/* City details (region, country) */
 .city-details {
-    color: var(--text-primary);
-    opacity: 0.7;
-    font-size: 1rem;
+    color: var(--text-primary);                     /* Theme-aware text color */
+    opacity: 0.7;                                   /* Slightly transparent */
+    font-size: 1rem;                                /* Standard text size */
 }
 
+/* Favorite button (star icon) on city card */
 .favorite-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    color: #ffd700;
-    transition: transform 0.2s;
+    background: none;                               /* No background */
+    border: none;                                   /* No border */
+    font-size: 1.5rem;                              /* Icon size */
+    cursor: pointer;                                /* Pointer cursor */
+    padding: 0.5rem;                                /* Padding for click area */
+    color: #ffd700;                                 /* Gold color for star */
+    transition: transform 0.2s;                     /* Smooth scale transition */
 }
 
+/* Favorite button hover state */
 .favorite-btn:hover {
-    transform: scale(1.2);
+    transform: scale(1.2);                          /* Zoom effect */
 }
 
+/* Favorite button when city is favorited (filled star) */
 .favorite-btn.favorited {
-    color: #ffd700;
+    color: #ffd700;                                 /* Gold color */
 }
 
-/* Forecast Section */
+/* ============================================================================
+   FORECAST SECTION
+   Displays 5-day weather forecast table
+   ============================================================================ */
 .forecast-section {
-    padding: 0;
+    padding: 0;                                     /* No padding */
 }
 
+/* Forecast section title */
 .forecast-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--text-primary);
-    margin-top: 0;
-    margin-bottom: 1.5rem;
+    font-size: 1.5rem;                              /* Large text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-top: 0;                                  /* No top margin */
+    margin-bottom: 1.5rem;                          /* Space below */
 }
 
+/* Scrollable container for forecast table (mobile responsiveness) */
 .forecast-table-container {
-    overflow-x: auto;
-    margin-top: 1rem;
+    overflow-x: auto;                               /* Horizontal scrolling */
+    margin-top: 1rem;                               /* Space above */
 }
 
+/* Forecast table */
 .forecast-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    font-size: 1rem;
+    width: 100%;                                    /* Full width */
+    border-collapse: separate;                      /* Separate borders for rounded corners */
+    border-spacing: 0;                              /* No spacing between cells */
+    font-size: 1rem;                                /* Standard text size */
 }
 
+/* Table header cells */
 .forecast-table th {
-    background: var(--accent-color);
-    color: white;
-    padding: 0.75rem 1rem;
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.1rem;
-    border-bottom: 3px solid var(--accent-color);
+    background: var(--accent-color);                /* Accent color background */
+    color: white;                                   /* White text */
+    padding: 0.75rem 1rem;                          /* Internal spacing */
+    text-align: center;                             /* Centered text */
+    font-weight: 600;                               /* Semi-bold font */
+    font-size: 1.1rem;                              /* Slightly larger text */
+    border-bottom: 3px solid var(--accent-color);   /* Bottom border */
 }
 
+/* First header cell - rounded top-left corner */
 .forecast-table th:first-child {
     border-top-left-radius: 8px;
 }
 
+/* Last header cell - rounded top-right corner */
 .forecast-table th:last-child {
     border-top-right-radius: 8px;
 }
 
+/* Table data cells */
 .forecast-table td {
-    padding: 0.75rem 1rem;
-    text-align: center;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--card-border);
-    font-size: 1.05rem;
+    padding: 0.75rem 1rem;                          /* Internal spacing */
+    text-align: center;                             /* Centered text */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    border-bottom: 1px solid var(--card-border);    /* Bottom border */
+    font-size: 1.05rem;                             /* Slightly larger text */
 }
 
+/* Table body rows */
 .forecast-table tbody tr {
-    background: var(--card-bg);
-    transition: background 0.2s;
+    background: var(--card-bg);                     /* Theme-aware background */
+    transition: background 0.2s;                    /* Smooth background transition */
 }
 
+/* Table row hover state */
 .forecast-table tbody tr:hover {
-    background: var(--card-hover);
+    background: var(--card-hover);                  /* Hover background color */
 }
 
+/* Last row first cell - rounded bottom-left corner */
 .forecast-table tbody tr:last-child td:first-child {
     border-bottom-left-radius: 8px;
 }
 
+/* Last row last cell - rounded bottom-right corner */
 .forecast-table tbody tr:last-child td:last-child {
     border-bottom-right-radius: 8px;
 }
 
+/* Date column cells */
 .forecast-date-cell {
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-weight: 600;                               /* Semi-bold font */
+    font-size: 1.1rem;                              /* Slightly larger text */
 }
 
+/* Weather description cells */
 .forecast-weather-cell {
-    font-size: 1.05rem;
+    font-size: 1.05rem;                             /* Standard text size */
 }
 
+/* Temperature cells */
 .forecast-temp-cell {
-    font-weight: 600;
-    font-size: 1.15rem;
+    font-weight: 600;                               /* Semi-bold font */
+    font-size: 1.15rem;                             /* Larger text */
 }
 
+/* Maximum temperature styling (high temp) */
 .temp-max {
-    color: #d32f2f;
-    font-weight: bold;
+    color: #d32f2f;                                 /* Red color for high temp */
+    font-weight: bold;                              /* Bold font */
 }
 
+/* Minimum temperature styling (low temp) */
 .temp-min {
-    color: #1976d2;
-    margin-left: 0.5rem;
+    color: #1976d2;                                 /* Blue color for low temp */
+    margin-left: 0.5rem;                            /* Space from max temp */
 }
 
+/* Dark theme overrides for temperature colors */
 body[data-theme="dark"] .temp-max {
-    color: #ff6b6b;
+    color: #ff6b6b;                                 /* Lighter red for dark theme */
 }
 
 body[data-theme="dark"] .temp-min {
-    color: #4dabf7;
+    color: #4dabf7;                                 /* Lighter blue for dark theme */
 }
 
-/* Responsive Design */
+/* ============================================================================
+   RESPONSIVE DESIGN - TABLET (1024px AND BELOW)
+   Adjusts layout for medium-sized screens
+   ============================================================================ */
 @media (max-width: 1024px) {
+    /* Reduce sidebar width */
     .app-container {
-        grid-template-columns: 240px 1fr;
+        grid-template-columns: 240px 1fr;           /* Narrower sidebar */
     }
 
     .sidebar {
-        width: 240px;
+        width: 240px;                               /* Match grid column width */
     }
 
     .main-content {
-        margin-left: 240px;
+        margin-left: 240px;                         /* Offset for fixed sidebar */
     }
 
+    /* Reduce navbar search margins */
     .navbar-search {
-        margin: 0 1rem;
+        margin: 0 1rem;                             /* Smaller horizontal margins */
     }
 }
 
+/* ============================================================================
+   RESPONSIVE DESIGN - MOBILE (768px AND BELOW)
+   Major layout changes for small screens
+   ============================================================================ */
 @media (max-width: 768px) {
+    /* Change layout to single column (hide sidebar by default) */
     .app-container {
         grid-template-areas:
-            "navbar"
-            "main";
-        grid-template-columns: 1fr;
-        grid-template-rows: var(--navbar-height) 1fr;
+            "navbar"                                /* Navbar full width */
+            "main";                                 /* Main content full width */
+        grid-template-columns: 1fr;                 /* Single column */
+        grid-template-rows: var(--navbar-height) 1fr;  /* Navbar height, remaining space */
     }
 
+    /* Hide sidebar off-screen, slide in when open */
     .sidebar {
-        position: fixed;
-        left: -280px;
-        transition: left 0.3s;
-        z-index: 999;
+        position: fixed;                            /* Fixed position */
+        left: -280px;                               /* Hidden off-screen to left */
+        transition: left 0.3s;                      /* Smooth slide transition */
+        z-index: 999;                               /* Above main content */
     }
 
+    /* Sidebar open state (triggered by JavaScript or toggle) */
     .sidebar.open {
-        left: 0;
+        left: 0;                                    /* Slide into view */
     }
 
+    /* Main content adjustments */
     .main-content {
-        margin-left: 0;
-        padding: 1rem;
+        margin-left: 0;                             /* No left margin */
+        padding: 1rem;                              /* Reduce padding */
     }
 
+    /* Navbar adjustments */
     .navbar {
-        padding: 0 1rem;
+        padding: 0 1rem;                            /* Reduce padding */
     }
 
+    /* Smaller brand text */
     .navbar-brand {
-        font-size: 1.2rem;
+        font-size: 1.2rem;                          /* Smaller text */
     }
 
+    /* Search section adjustments */
     .navbar-search {
-        margin: 0 0.5rem;
-        max-width: none;
+        margin: 0 0.5rem;                           /* Smaller margins */
+        max-width: none;                            /* Remove max-width constraint */
     }
 
+    /* Smaller search input */
     .navbar-search input {
-        padding: 0.6rem 0.75rem;
-        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;                    /* Smaller padding */
+        font-size: 0.9rem;                          /* Smaller text */
     }
 
+    /* Smaller search button */
     .navbar-search button {
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
+        padding: 0.6rem 1rem;                       /* Smaller padding */
+        font-size: 0.9rem;                          /* Smaller text */
     }
 
+    /* Smaller theme toggle button */
     .theme-toggle-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
+        width: 40px;                                /* Smaller width */
+        height: 40px;                               /* Smaller height */
+        font-size: 1.1rem;                          /* Smaller icon */
     }
 
+    /* Smaller forecast table text */
     .forecast-table {
-        font-size: 0.9rem;
+        font-size: 0.9rem;                          /* Smaller text */
     }
 
+    /* Smaller table cell padding */
     .forecast-table th,
     .forecast-table td {
-        padding: 1rem 0.5rem;
+        padding: 1rem 0.5rem;                       /* Smaller padding */
     }
 
+    /* Single column for search results */
     .search-results-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr;                 /* Single column */
     }
 }
 
-/* Hourly Forecast Styles */
+/* ============================================================================
+   HOURLY FORECAST STYLES
+   Horizontal scrollable cards showing hourly weather data
+   ============================================================================ */
 .hourly-forecast-container {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding: 1rem 0;
-    margin-bottom: 2rem;
+    display: flex;                                  /* Flexbox for horizontal layout */
+    gap: 1rem;                                      /* Space between cards */
+    overflow-x: auto;                               /* Horizontal scrolling */
+    padding: 1rem 0;                                /* Vertical padding */
+    margin-bottom: 2rem;                            /* Space below */
 }
 
+/* Individual hourly forecast card */
 .hourly-card {
-    min-width: 140px;
-    padding: 1rem;
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    border-radius: 12px;
-    text-align: center;
-    transition: all 0.3s;
-    flex-shrink: 0;
+    min-width: 140px;                               /* Minimum width (prevents squishing) */
+    padding: 1rem;                                  /* Internal spacing */
+    background: var(--card-bg);                     /* Theme-aware background */
+    border: 2px solid var(--card-border);           /* Theme-aware border */
+    border-radius: 12px;                            /* Rounded corners */
+    text-align: center;                             /* Centered text */
+    transition: all 0.3s;                           /* Smooth transitions */
+    flex-shrink: 0;                                 /* Prevent shrinking */
 }
 
+/* Hourly card hover state */
 .hourly-card:hover {
-    border-color: var(--accent-color);
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-color);              /* Accent color border */
+    transform: translateY(-4px);                    /* Lift effect */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);     /* Drop shadow */
 }
 
+/* Time display (e.g., "14:00") */
 .hourly-time {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--accent-color);
-    margin-bottom: 0.5rem;
+    font-size: 1.1rem;                              /* Medium text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--accent-color);                     /* Accent color */
+    margin-bottom: 0.5rem;                          /* Space below */
 }
 
+/* Weather description (e.g., "Clear sky") */
 .hourly-weather {
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    margin-bottom: 0.75rem;
-    min-height: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 0.9rem;                              /* Small text */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-bottom: 0.75rem;                         /* Space below */
+    min-height: 2.5rem;                             /* Fixed height to align cards */
+    display: flex;                                  /* Flexbox for centering */
+    align-items: center;                            /* Vertically center */
+    justify-content: center;                        /* Horizontally center */
 }
 
+/* Temperature display */
 .hourly-temp {
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: var(--text-primary);
-    margin-bottom: 0.75rem;
+    font-size: 1.4rem;                              /* Large text */
+    font-weight: bold;                              /* Bold font */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    margin-bottom: 0.75rem;                         /* Space below */
 }
 
+/* Additional details (precipitation, wind) */
 .hourly-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-    opacity: 0.8;
+    display: flex;                                  /* Flexbox layout */
+    flex-direction: column;                         /* Vertical stacking */
+    gap: 0.25rem;                                   /* Space between items */
+    font-size: 0.85rem;                             /* Small text */
+    color: var(--text-primary);                     /* Theme-aware text color */
+    opacity: 0.8;                                   /* Slightly transparent */
 }
 
+/* Precipitation and wind detail rows */
 .hourly-precipitation,
 .hourly-wind {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
+    display: flex;                                  /* Flexbox layout */
+    align-items: center;                            /* Vertically center */
+    justify-content: center;                        /* Horizontally center */
+    gap: 0.25rem;                                   /* Space between emoji and text */
 }
 
-/* Scrollbar styling for hourly forecast */
+/* ============================================================================
+   SCROLLBAR STYLING FOR HOURLY FORECAST
+   Custom scrollbar for horizontal scrolling container
+   ============================================================================ */
+
+/* Scrollbar track */
 .hourly-forecast-container::-webkit-scrollbar {
-    height: 8px;
+    height: 8px;                                    /* Scrollbar height */
 }
 
+/* Scrollbar background track */
 .hourly-forecast-container::-webkit-scrollbar-track {
-    background: var(--card-border);
-    border-radius: 4px;
+    background: var(--card-border);                 /* Theme-aware background */
+    border-radius: 4px;                             /* Rounded corners */
 }
 
+/* Scrollbar thumb (draggable part) */
 .hourly-forecast-container::-webkit-scrollbar-thumb {
-    background: var(--accent-color);
-    border-radius: 4px;
+    background: var(--accent-color);                /* Accent color */
+    border-radius: 4px;                             /* Rounded corners */
 }
 
+/* Scrollbar thumb hover state */
 .hourly-forecast-container::-webkit-scrollbar-thumb:hover {
-    background: #5568d3;
+    background: #5568d3;                            /* Darker shade on hover */
 }
 
+/* ============================================================================
+   RESPONSIVE DESIGN - HOURLY FORECAST MOBILE
+   Adjustments for hourly cards on small screens
+   ============================================================================ */
 @media (max-width: 768px) {
+    /* Smaller hourly cards */
     .hourly-card {
-        min-width: 120px;
-        padding: 0.75rem;
+        min-width: 120px;                           /* Narrower cards */
+        padding: 0.75rem;                           /* Smaller padding */
     }
 
+    /* Smaller time text */
     .hourly-time {
-        font-size: 1rem;
+        font-size: 1rem;                            /* Smaller text */
     }
 
+    /* Smaller temperature text */
     .hourly-temp {
-        font-size: 1.2rem;
+        font-size: 1.2rem;                          /* Smaller text */
     }
 
+    /* Smaller detail text */
     .hourly-details {
-        font-size: 0.75rem;
+        font-size: 0.75rem;                         /* Smaller text */
     }
 }

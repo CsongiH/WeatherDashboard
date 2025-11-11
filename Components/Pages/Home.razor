@@ -1,21 +1,78 @@
+@*
+============================================================================
+Home.razor
+
+Purpose: Main dashboard page - displays weather forecasts and manages user interactions
+Route: "/" (homepage)
+Location: Components/Pages/Home.razor
+
+Features:
+- Search for cities and display results as clickable cards
+- Display 5-day weather forecast for selected city
+- Display hourly forecast for today (remaining hours)
+- Add/remove cities from favorites with star button
+- Show error messages for failed operations
+- Welcome screen when no data is displayed
+- Loading state during API calls
+
+Component Structure:
+- Navbar: Top bar with search functionality and theme toggle
+- Sidebar: Left panel showing favorite cities list
+- Main Content: Dynamic content area showing:
+  * Error messages (if any)
+  * Search results (city cards with favorite buttons)
+  * Hourly forecast (horizontal scrollable cards)
+  * 5-day forecast (table with date/weather/temp/precipitation/wind)
+  * Welcome message (default state)
+
+Data Flow:
+1. User searches for city → Navbar calls HandleSearchResults/HandleSearchError
+2. User clicks city card → SelectCity loads weather data
+3. User stars/unstars city → ToggleFavorite adds/removes from favorites
+4. User clicks favorite → Sidebar calls SelectCity to load weather
+
+Dependencies:
+- WeatherService: Fetches weather and city data from Open-Meteo API
+- FavoritesService: Manages favorite cities in localStorage
+============================================================================
+*@
+
+@* Route: This page is accessible at the root URL "/" *@
 @page "/"
+
+@* Namespace imports for models and components *@
 @using WeatherDashboard.Models
 @using WeatherDashboard.Services
 @using WeatherDashboard.Components.Shared
+
+@* Dependency Injection: Services injected by Blazor DI container *@
 @inject WeatherService WeatherService
 @inject FavoritesService FavoritesService
 
+@* Browser tab title for this page *@
 <PageTitle>Időjárás Dashboard</PageTitle>
 
+@* Main application container - holds all UI sections *@
 <div class="app-container">
+    @* Top navigation bar
+        OnSearchResults: Called when Navbar returns city search results
+        OnSearchError: Called when Navbar encounters search errors
+    *@
     <Navbar OnSearchResults="HandleSearchResults" OnSearchError="HandleSearchError" />
 
+    @* Left sidebar showing favorite cities
+        FavoriteCities: Pass down current favorites list
+        OnCitySelected: Called when user clicks a favorite city
+        OnFavoritesChanged: Called when favorites are added/removed
+    *@
     <Sidebar FavoriteCities="favoriteCities"
              OnCitySelected="SelectCity"
              OnFavoritesChanged="LoadFavorites" />
 
+    @* Main content area - displays search results, forecasts, and messages *@
     <main class="main-content">
         <div class="content-wrapper">
+            @* Error message display - shown when operations fail *@
             @if (!string.IsNullOrEmpty(errorMessage))
             {
                 <div class="error-message">
@@ -23,24 +80,42 @@
                 </div>
             }
 
+            @* Search results section - displayed after user searches for cities *@
             @if (searchResults.Any())
             {
                 <div class="search-results">
                     <h2 class="search-results-title">Keresési eredmények</h2>
+
+                    @* Grid of city cards - each card shows city info and favorite button *@
                     <div class="search-results-grid">
                         @foreach (var city in searchResults)
                         {
+                            @* City card - clickable to load weather forecast
+                                @onclick: Load weather when user clicks anywhere on card
+                            *@
                             <div class="city-card" @onclick="() => SelectCity(city)">
+                                @* City information section *@
                                 <div class="city-card-content">
+                                    @* City name (e.g., "Budapest") *@
                                     <div class="city-name">@city.Name</div>
+
+                                    @* City details: Region and Country *@
                                     <div class="city-details">
+                                        @* Admin1 is optional - only show if available *@
                                         @if (!string.IsNullOrEmpty(city.Admin1))
                                         {
                                             <span>@city.Admin1, </span>
                                         }
+                                        @* Country always shown *@
                                         <span>@city.Country</span>
                                     </div>
                                 </div>
+
+                                @* Favorite button - star icon to add/remove from favorites
+                                    @onclick:stopPropagation: Prevents event from bubbling to parent card
+                                    Without this, clicking favorite would also load weather
+                                    favorited class: Filled star (★) if favorited, empty star (☆) if not
+                                *@
                                 <button class="favorite-btn @(IsCityFavorite(city) ? "favorited" : "")"
                                         @onclick:stopPropagation="true"
                                         @onclick="() => ToggleFavorite(city)"
@@ -53,6 +128,7 @@
                 </div>
             }
 
+            @* Loading state - shown while fetching weather data *@
             @if (isLoading && selectedCity != null)
             {
                 <div class="forecast-section">
@@ -62,21 +138,40 @@
                     </p>
                 </div>
             }
+            @* Forecast sections - shown after successfully loading weather data *@
             else if (selectedCity != null && forecasts.Any())
             {
+                @* Hourly forecast section - shows remaining hours for today
+                    Only displayed if we have hourly data (today's forecast)
+                *@
                 @if (hourlyForecasts.Any())
                 {
                     <div class="forecast-section">
                         <h2 class="forecast-title">Mai óránkénti előrejelzés - @selectedCity.Name</h2>
+
+                        @* Horizontal scrollable container for hourly cards *@
                         <div class="hourly-forecast-container">
                             @foreach (var hourly in hourlyForecasts)
                             {
+                                @* Single hourly forecast card
+                                    Shows: Time, weather description, temperature, precipitation, wind speed
+                                *@
                                 <div class="hourly-card">
+                                    @* Time in HH:mm format (e.g., "14:00") *@
                                     <div class="hourly-time">@hourly.Time.ToString("HH:mm")</div>
+
+                                    @* Weather description from WMO code (e.g., "Clear sky") *@
                                     <div class="hourly-weather">@hourly.WeatherDescription</div>
+
+                                    @* Temperature with 1 decimal place *@
                                     <div class="hourly-temp">@hourly.Temperature.ToString("F1")°C</div>
+
+                                    @* Additional weather details *@
                                     <div class="hourly-details">
+                                        @* Precipitation amount with water droplet emoji *@
                                         <div class="hourly-precipitation">💧 @hourly.Precipitation.ToString("F1") mm</div>
+
+                                        @* Wind speed with wind emoji *@
                                         <div class="hourly-wind">💨 @hourly.WindSpeed.ToString("F1") km/h</div>
                                     </div>
                                 </div>
@@ -85,20 +180,29 @@
                     </div>
                 }
 
+                @* 5-day forecast section - table showing daily forecasts *@
                 <div class="forecast-section">
                     <h2 class="forecast-title">5 napos előrejelzés - @selectedCity.Name</h2>
+
+                    @* Scrollable container for forecast table (mobile responsiveness) *@
                     <div class="forecast-table-container">
                         <table class="forecast-table">
+                            @* Table header - dates for each day *@
                             <thead>
                                 <tr>
                                     <th>Dátum</th>
+                                    @* Loop through forecasts to create date column headers *@
                                     @foreach (var forecast in forecasts)
                                     {
+                                        @* Date format: "Mon, Jan 15" *@
                                         <th class="forecast-date-cell">@forecast.Date.ToString("ddd, MMM dd")</th>
                                     }
                                 </tr>
                             </thead>
+
+                            @* Table body - rows for different weather metrics *@
                             <tbody>
+                                @* Weather description row (e.g., "Clear sky", "Partly cloudy") *@
                                 <tr>
                                     <td><strong>Időjárás</strong></td>
                                     @foreach (var forecast in forecasts)
@@ -106,16 +210,23 @@
                                         <td class="forecast-weather-cell">@forecast.WeatherDescription</td>
                                     }
                                 </tr>
+
+                                @* Temperature row - shows max and min temps *@
                                 <tr>
                                     <td><strong>Hőmérséklet</strong></td>
                                     @foreach (var forecast in forecasts)
                                     {
                                         <td class="forecast-temp-cell">
+                                            @* Max temperature (high) *@
                                             <span class="temp-max">@forecast.MaxTemp.ToString("F1")°C</span>
+
+                                            @* Min temperature (low) *@
                                             <span class="temp-min">@forecast.MinTemp.ToString("F1")°C</span>
                                         </td>
                                     }
                                 </tr>
+
+                                @* Precipitation row - total daily rainfall *@
                                 <tr>
                                     <td><strong>Csapadék</strong></td>
                                     @foreach (var forecast in forecasts)
@@ -123,6 +234,8 @@
                                         <td>@forecast.Precipitation.ToString("F1") mm</td>
                                     }
                                 </tr>
+
+                                @* Wind speed row - max daily wind speed *@
                                 <tr>
                                     <td><strong>Szélsebesség</strong></td>
                                     @foreach (var forecast in forecasts)
@@ -136,6 +249,9 @@
                 </div>
             }
 
+            @* Welcome message - shown when no data is displayed (initial state)
+                Displayed when: no search results, no selected city, no forecasts, no errors
+            *@
             @if (!searchResults.Any() && selectedCity == null && !forecasts.Any() && string.IsNullOrEmpty(errorMessage))
             {
                 <div class="search-results">
@@ -151,89 +267,186 @@
 </div>
 
 @code {
+    // ======= COMPONENT STATE =======
+
+    // Search results returned from Navbar component
+    // Displayed as clickable city cards in search results section
     private List<GeocodingResult> searchResults = new();
+
+    // Daily forecast data for selected city (5 days)
+    // Displayed in the forecast table
     private List<DailyForecast> forecasts = new();
+
+    // Hourly forecast data for today (remaining hours)
+    // Displayed in horizontal scrollable cards
     private List<HourlyForecast> hourlyForecasts = new();
+
+    // User's favorite cities loaded from localStorage
+    // Passed to Sidebar component for display
     private List<GeocodingResult> favoriteCities = new();
+
+    // Currently selected city (user clicked to view weather)
+    // Used to display city name in forecast titles
+    // Nullable because no city is selected initially
     private GeocodingResult? selectedCity;
+
+    // Error message to display to user
+    // Set by event handlers when operations fail
+    // Empty string when no error
     private string errorMessage = string.Empty;
+
+    // Loading state while fetching weather data
+    // Used to show loading message and prevent duplicate requests
     private bool isLoading = false;
 
+    // ======= LIFECYCLE METHODS =======
+
+    // OnInitializedAsync: Called when page first loads
+    // Runs asynchronously before the page is rendered
+    // Used to load initial data (favorites from localStorage)
     protected override async Task OnInitializedAsync()
     {
+        // Load user's favorite cities from localStorage
         await LoadFavorites();
     }
 
+    // ======= DATA LOADING =======
+
+    // Load favorite cities from localStorage via FavoritesService
+    // Called on initialization and after favorites are added/removed
+    // StateHasChanged triggers re-render to update Sidebar
     private async Task LoadFavorites()
     {
+        // Step 1: Fetch favorites from localStorage
         favoriteCities = await FavoritesService.GetFavoritesAsync();
+
+        // Step 2: Trigger re-render to update UI with new favorites
         StateHasChanged();
     }
 
+    // ======= EVENT HANDLERS - NAVBAR CALLBACKS =======
+
+    // Handle search results from Navbar component
+    // Parameters: results - list of cities matching search query (0-5 cities)
+    // Called by Navbar via OnSearchResults EventCallback
     private void HandleSearchResults(List<GeocodingResult> results)
     {
+        // Step 1: Store search results to display as city cards
         searchResults = new List<GeocodingResult>(results);
+
+        // Step 2: Clear forecast data when new search is performed
+        // User should select a city from new results to see forecasts
         forecasts = new List<DailyForecast>();
         hourlyForecasts = new List<HourlyForecast>();
         selectedCity = null;
-        // Only clear error if we have actual results
+
+        // Step 3: Clear error message only if we have results
+        // If no results, error message is set by HandleSearchError
         if (results.Any())
         {
             errorMessage = string.Empty;
         }
+
+        // Step 4: Trigger re-render to display new search results
         StateHasChanged();
     }
 
+    // Handle search errors from Navbar component
+    // Parameters: error - error message to display to user
+    // Called by Navbar via OnSearchError EventCallback
     private async Task HandleSearchError(string error)
     {
+        // Step 1: Store error message to display in error message box
         errorMessage = error;
+
+        // Step 2: Clear search results when error occurs
+        // Prevents showing outdated results alongside error message
         if (!string.IsNullOrEmpty(error))
         {
             searchResults = new List<GeocodingResult>();
         }
+
+        // Step 3: Trigger re-render on UI thread to display error
+        // InvokeAsync ensures StateHasChanged runs on correct thread
         await InvokeAsync(StateHasChanged);
     }
 
+    // ======= FAVORITES MANAGEMENT =======
+
+    // Check if a city is in the user's favorites list
+    // Parameters: city - the city to check
+    // Returns: true if city is favorited, false otherwise
+    // Used to determine star icon (★ vs ☆) and button tooltip text
     private bool IsCityFavorite(GeocodingResult city)
     {
+        // Compare by coordinates since they uniquely identify a location
+        // City names can be duplicated (e.g., multiple "Springfield" cities)
         return favoriteCities.Any(f => f.Latitude == city.Latitude && f.Longitude == city.Longitude);
     }
 
+    // Toggle favorite status for a city (add if not favorited, remove if favorited)
+    // Parameters: city - the city to add or remove from favorites
+    // Called when user clicks star button on city card
     private async Task ToggleFavorite(GeocodingResult city)
     {
+        // Step 1: Check current favorite status
         if (IsCityFavorite(city))
         {
+            // City is favorited - remove from favorites
             await FavoritesService.RemoveFavoriteAsync(city);
         }
         else
         {
+            // City is not favorited - add to favorites
             await FavoritesService.AddFavoriteAsync(city);
         }
+
+        // Step 2: Reload favorites list from localStorage
+        // This updates the UI to reflect the change
+        // Also updates the Sidebar component via data binding
         await LoadFavorites();
     }
 
+    // ======= CITY SELECTION & WEATHER LOADING =======
+
+    // Load weather forecast for selected city
+    // Parameters: city - the city to load weather for
+    // Called when user clicks city card or favorite in Sidebar
+    // Fetches both daily (5-day) and hourly (today) forecasts
     private async Task SelectCity(GeocodingResult city)
     {
         try
         {
+            // Step 1: Reset state for new city selection
             errorMessage = string.Empty;
             isLoading = true;
             selectedCity = city;
 
-            // Fetch both daily and hourly forecasts
+            // Step 2: Fetch weather data from Open-Meteo API
+            // Both requests run in parallel for better performance
+            // GetForecastAsync: Gets 5-day daily forecast
+            // GetHourlyForecastAsync: Gets remaining hours for today
             var newForecasts = await WeatherService.GetForecastAsync(city.Latitude, city.Longitude, city.Name);
             var newHourlyForecasts = await WeatherService.GetHourlyForecastAsync(city.Latitude, city.Longitude, city.Name);
 
-            // Only update forecasts if we got valid data
+            // Step 3: Update state only if we received valid data
+            // Prevents showing empty forecast sections on API failure
             if (newForecasts != null && newForecasts.Any())
             {
+                // Valid data received - update state
                 forecasts = newForecasts;
                 hourlyForecasts = newHourlyForecasts ?? new List<HourlyForecast>();
-                searchResults = new List<GeocodingResult>(); // Clear search results AFTER successful forecast load
+
+                // Clear search results after successful forecast load
+                // This removes city cards and shows only forecast sections
+                searchResults = new List<GeocodingResult>();
+
+                // Trigger re-render to display forecasts
                 StateHasChanged();
             }
             else
             {
+                // No data received - show error and reset state
                 errorMessage = "Nem sikerült betölteni az időjárás adatokat.";
                 forecasts = new List<DailyForecast>();
                 hourlyForecasts = new List<HourlyForecast>();
@@ -242,15 +455,23 @@
         }
         catch (Exception ex)
         {
+            // Step 4: Handle errors (network issues, API failures, etc.)
             errorMessage = ex.Message;
+
             // Reset forecasts and selectedCity to maintain consistent state
+            // Prevents showing partial or outdated data
             forecasts = new List<DailyForecast>();
             hourlyForecasts = new List<HourlyForecast>();
             selectedCity = null;
         }
         finally
         {
+            // Step 5: Always reset loading state when done
+            // This runs regardless of success or failure
             isLoading = false;
+
+            // Trigger final re-render to update UI
+            // Shows either forecasts (success) or error message (failure)
             StateHasChanged();
         }
     }

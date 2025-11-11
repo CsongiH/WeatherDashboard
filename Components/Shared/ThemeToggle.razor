@@ -1,10 +1,40 @@
+@*
+============================================================================
+ThemeToggle.razor
+
+Purpose: Button component for switching between light and dark themes
+Location: Navbar (top-right corner of app)
+
+Features:
+- Toggle between light/dark themes with single click
+- Stores theme preference in localStorage
+- Shows sun icon (☀️) in dark mode, moon icon (🌙) in light mode
+- Theme persists across browser sessions
+- Works via JavaScript interop with theme.js
+
+How it works:
+1. On first render, loads theme from localStorage
+2. User clicks button to toggle theme
+3. New theme saved to localStorage and applied to document.body
+4. CSS variables update automatically based on body[data-theme] attribute
+============================================================================
+*@
+
+@* Inject JavaScript runtime for calling JavaScript functions from C# *@
 @inject IJSRuntime JSRuntime
 
+@* Theme toggle button
+    - Click handler: ToggleTheme method
+    - Icon changes based on current theme
+    - Styled by app.css (.theme-toggle-btn class)
+*@
 <button @onclick="ToggleTheme" class="theme-toggle-btn" title="Téma váltása">
+    @* Show sun icon when in dark mode (clicking switches to light) *@
     @if (currentTheme == "dark")
     {
         <span>☀️</span>
     }
+    @* Show moon icon when in light mode (clicking switches to dark) *@
     else
     {
         <span>🌙</span>
@@ -12,35 +42,72 @@
 </button>
 
 @code {
+    // ======= COMPONENT STATE =======
+
+    // Current theme: "light" or "dark"
+    // Defaults to "light" until loaded from localStorage
     private string currentTheme = "light";
 
+    // ======= LIFECYCLE METHODS =======
+
+    // OnAfterRenderAsync: Called after component has been rendered to HTML
+    // Parameters: firstRender - true only on first render, false on subsequent re-renders
+    //
+    // Why OnAfterRenderAsync instead of OnInitialized?
+    // - JSInterop requires the browser to be initialized
+    // - OnInitialized runs before browser is ready
+    // - OnAfterRenderAsync runs after HTML is sent to browser
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // Only load theme on first render to avoid unnecessary calls
         if (firstRender)
         {
             try
             {
+                // Step 1: Call JavaScript themeManager.getTheme() function
+                // Returns "light" or "dark" from localStorage
                 currentTheme = await JSRuntime.InvokeAsync<string>("themeManager.getTheme");
+
+                // Step 2: Re-render component with loaded theme
+                // This updates the icon to match stored theme
                 StateHasChanged();
             }
             catch
             {
-                // Default to light theme if unable to get from localStorage
+                // Fallback: If localStorage access fails (e.g., private browsing)
+                // Keep default "light" theme
                 currentTheme = "light";
             }
         }
     }
 
+    // ======= EVENT HANDLERS =======
+
+    // Toggle between light and dark themes
+    // Called when user clicks the theme toggle button
     private async Task ToggleTheme()
     {
+        // Step 1: Switch theme value
+        // If currently light, switch to dark; if dark, switch to light
         currentTheme = currentTheme == "light" ? "dark" : "light";
+
         try
         {
+            // Step 2: Save new theme to localStorage and apply to DOM
+            // Calls JavaScript themeManager.setTheme(theme) function
+            // This function:
+            //   1. Saves theme to localStorage for persistence
+            //   2. Sets document.body.dataset.theme to trigger CSS updates
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", currentTheme);
         }
         catch
         {
-            // Silently fail if unable to set theme
+            // Silently fail if localStorage is not available
+            // Theme toggle still works for current session
+            // Just won't persist across page reloads
         }
+
+        // Note: StateHasChanged() not needed here
+        // Component automatically re-renders after button click
     }
 }
