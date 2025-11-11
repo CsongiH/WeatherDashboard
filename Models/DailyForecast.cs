@@ -13,18 +13,18 @@ namespace WeatherDashboard.Models
         {
             return weatherCode switch
             {
-                0 => "Clear sky",
-                1 or 2 or 3 => "Partly cloudy",
-                45 or 48 => "Foggy",
-                51 or 53 or 55 => "Drizzle",
-                61 or 63 or 65 => "Rain",
-                71 or 73 or 75 => "Snow",
-                77 => "Snow grains",
-                80 or 81 or 82 => "Rain showers",
-                85 or 86 => "Snow showers",
-                95 => "Thunderstorm",
-                96 or 99 => "Thunderstorm with hail",
-                _ => "Unknown"
+                0 => "Tiszta ég",
+                1 or 2 or 3 => "Részben felhős",
+                45 or 48 => "Ködös",
+                51 or 53 or 55 => "Szitálás",
+                61 or 63 or 65 => "Eső",
+                71 or 73 or 75 => "Havazás",
+                77 => "Szemcsés hó",
+                80 or 81 or 82 => "Zápor",
+                85 or 86 => "Hózápor",
+                95 => "Zivatar",
+                96 or 99 => "Zivatar jégesővel",
+                _ => "Ismeretlen"
             };
         }
     }

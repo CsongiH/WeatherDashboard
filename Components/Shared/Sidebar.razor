@@ -3,13 +3,13 @@
 @inject FavoritesService FavoritesService
 
 <aside class="sidebar">
-    <div class="sidebar-title">Favorite Cities</div>
+    <div class="sidebar-title">Kedvenc városok</div>
 
     @if (!favoriteCities.Any())
     {
         <div class="sidebar-empty">
-            No favorite cities yet.<br />
-            Search for a city and add it to favorites!
+            Még nincsenek kedvenc városok.<br />
+            Keressen egy várost és adja hozzá a kedvencekhez!
         </div>
     }
     else
@@ -31,7 +31,7 @@
                     <button class="sidebar-item-remove"
                             @onclick:stopPropagation="true"
                             @onclick="() => RemoveFavorite(city)"
-                            title="Remove from favorites">
+                            title="Eltávolítás a kedvencek közül">
                         ★
                     </button>
                 </div>

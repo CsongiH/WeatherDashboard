@@ -4,23 +4,23 @@
 @inject IJSRuntime JSRuntime
 
 <nav class="navbar">
-    <div class="navbar-brand">Weather Dashboard</div>
+    <div class="navbar-brand">Időjárás Dashboard</div>
 
     <div class="navbar-search">
         <input type="text"
                @bind="searchQuery"
                @bind:event="oninput"
                @onkeypress="HandleKeyPress"
-               placeholder="Search for a city..."
-               aria-label="City search" />
+               placeholder="Város keresése..."
+               aria-label="Városkeresés" />
         <button @onclick="SearchCity" disabled="@isLoading">
             @if (isLoading)
             {
-                <span>Searching...</span>
+                <span>Keresés...</span>
             }
             else
             {
-                <span>Search</span>
+                <span>Keresés</span>
             }
         </button>
     </div>
@@ -44,7 +44,7 @@
     {
         if (string.IsNullOrWhiteSpace(searchQuery))
         {
-            await OnSearchError.InvokeAsync("Please enter a city name.");
+            await OnSearchError.InvokeAsync("Kérjük, adjon meg egy városnevet.");
             return;
         }
 
@@ -57,7 +57,7 @@
 
             if (!results.Any())
             {
-                await OnSearchError.InvokeAsync($"No cities found matching '{searchQuery}'. Please try a different search.");
+                await OnSearchError.InvokeAsync($"Nem található város a '{searchQuery}' keresésre. Kérjük, próbáljon más keresést.");
                 await OnSearchResults.InvokeAsync(new List<GeocodingResult>());
             }
             else

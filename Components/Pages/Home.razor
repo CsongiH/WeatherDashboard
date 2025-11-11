@@ -5,7 +5,7 @@
 @inject WeatherService WeatherService
 @inject FavoritesService FavoritesService
 
-<PageTitle>Weather Dashboard</PageTitle>
+<PageTitle>Időjárás Dashboard</PageTitle>
 
 <div class="app-container">
     <Navbar OnSearchResults="HandleSearchResults" OnSearchError="HandleSearchError" />
@@ -26,7 +26,7 @@
             @if (searchResults.Any())
             {
                 <div class="search-results">
-                    <h2 class="search-results-title">Search Results</h2>
+                    <h2 class="search-results-title">Keresési eredmények</h2>
                     <div class="search-results-grid">
                         @foreach (var city in searchResults)
                         {
@@ -44,7 +44,7 @@
                                 <button class="favorite-btn @(IsCityFavorite(city) ? "favorited" : "")"
                                         @onclick:stopPropagation="true"
                                         @onclick="() => ToggleFavorite(city)"
-                                        title="@(IsCityFavorite(city) ? "Remove from favorites" : "Add to favorites")">
+                                        title="@(IsCityFavorite(city) ? "Eltávolítás a kedvencek közül" : "Hozzáadás a kedvencekhez")">
                                     @(IsCityFavorite(city) ? "★" : "☆")
                                 </button>
                             </div>
@@ -53,15 +53,24 @@
                 </div>
             }
 
-            @if (selectedCity != null && forecasts.Any())
+            @if (isLoading && selectedCity != null)
             {
                 <div class="forecast-section">
-                    <h2 class="forecast-title">5-Day Forecast for @selectedCity.Name</h2>
+                    <h2 class="forecast-title">Betöltés... - @selectedCity.Name</h2>
+                    <p style="text-align: center; color: var(--text-primary); opacity: 0.7; padding: 2rem;">
+                        Időjárás adatok betöltése...
+                    </p>
+                </div>
+            }
+            else if (selectedCity != null && forecasts.Any())
+            {
+                <div class="forecast-section">
+                    <h2 class="forecast-title">5 napos előrejelzés - @selectedCity.Name</h2>
                     <div class="forecast-table-container">
                         <table class="forecast-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th>Dátum</th>
                                     @foreach (var forecast in forecasts)
                                     {
                                         <th class="forecast-date-cell">@forecast.Date.ToString("ddd, MMM dd")</th>
@@ -70,14 +79,14 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><strong>Weather</strong></td>
+                                    <td><strong>Időjárás</strong></td>
                                     @foreach (var forecast in forecasts)
                                     {
                                         <td class="forecast-weather-cell">@forecast.WeatherDescription</td>
                                     }
                                 </tr>
                                 <tr>
-                                    <td><strong>Temperature</strong></td>
+                                    <td><strong>Hőmérséklet</strong></td>
                                     @foreach (var forecast in forecasts)
                                     {
                                         <td class="forecast-temp-cell">
@@ -87,14 +96,14 @@
                                     }
                                 </tr>
                                 <tr>
-                                    <td><strong>Precipitation</strong></td>
+                                    <td><strong>Csapadék</strong></td>
                                     @foreach (var forecast in forecasts)
                                     {
                                         <td>@forecast.Precipitation.ToString("F1") mm</td>
                                     }
                                 </tr>
                                 <tr>
-                                    <td><strong>Wind Speed</strong></td>
+                                    <td><strong>Szélsebesség</strong></td>
                                     @foreach (var forecast in forecasts)
                                     {
                                         <td>@forecast.WindSpeed.ToString("F1") km/h</td>
@@ -109,10 +118,10 @@
             @if (!searchResults.Any() && selectedCity == null && !forecasts.Any() && string.IsNullOrEmpty(errorMessage))
             {
                 <div class="search-results">
-                    <h2 class="search-results-title">Welcome to Weather Dashboard</h2>
+                    <h2 class="search-results-title">Üdvözöljük az Időjárás Dashboard-on</h2>
                     <p style="text-align: center; color: var(--text-primary); opacity: 0.7; font-size: 1.1rem; margin: 2rem 0;">
-                        Search for a city to view its 5-day weather forecast.<br />
-                        Add cities to your favorites for quick access!
+                        Keressen egy várost az 5 napos időjárás-előrejelzés megtekintéséhez.<br />
+                        Adjon hozzá városokat a kedvencekhez a gyors hozzáféréshez!
                     </p>
                 </div>
             }
@@ -142,7 +151,7 @@
     private void HandleSearchResults(List<GeocodingResult> results)
     {
         searchResults = new List<GeocodingResult>(results);
-        forecasts.Clear();
+        forecasts = new List<DailyForecast>();
         selectedCity = null;
         errorMessage = string.Empty;
         StateHasChanged();
@@ -153,7 +162,7 @@
         errorMessage = error;
         if (!string.IsNullOrEmpty(error))
         {
-            searchResults.Clear();
+            searchResults = new List<GeocodingResult>();
         }
     }
 
@@ -182,18 +191,34 @@
             errorMessage = string.Empty;
             isLoading = true;
             selectedCity = city;
-            searchResults.Clear(); // Hide search results after selection
 
-            forecasts = await WeatherService.GetForecastAsync(city.Latitude, city.Longitude);
+            var newForecasts = await WeatherService.GetForecastAsync(city.Latitude, city.Longitude, city.Name);
+
+            // Only update forecasts if we got valid data
+            if (newForecasts != null && newForecasts.Any())
+            {
+                forecasts = newForecasts;
+                searchResults.Clear(); // Clear search results AFTER successful forecast load
+                StateHasChanged();
+            }
+            else
+            {
+                errorMessage = "Nem sikerült betölteni az időjárás adatokat.";
+                forecasts = new List<DailyForecast>();
+                selectedCity = null;
+            }
         }
         catch (Exception ex)
         {
             errorMessage = ex.Message;
-            forecasts.Clear();
+            // Reset both forecasts and selectedCity to maintain consistent state
+            forecasts = new List<DailyForecast>();
+            selectedCity = null;
         }
         finally
         {
             isLoading = false;
+            StateHasChanged();
         }
     }
 }

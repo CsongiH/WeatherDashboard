@@ -68,14 +68,16 @@ namespace WeatherDashboard.Services
             }
         }
 
-        public async Task<List<DailyForecast>> GetForecastAsync(double latitude, double longitude)
+        public async Task<List<DailyForecast>> GetForecastAsync(double latitude, double longitude, string cityName)
         {
+            _logger.LogInformation("Opening forecast for city: {CityName} ({Lat}, {Lon})", cityName, latitude, longitude);
+
             var cacheKey = $"weather_{latitude:F2}_{longitude:F2}";
 
             // Try to get from cache
             if (_cache.TryGetValue(cacheKey, out List<DailyForecast>? cachedForecast) && cachedForecast != null)
             {
-                _logger.LogInformation("Retrieved weather forecast from cache for: {Lat}, {Lon}", latitude, longitude);
+                _logger.LogInformation("Retrieved weather forecast from CACHE for: {CityName}", cityName);
                 return cachedForecast;
             }
 
@@ -117,19 +119,28 @@ namespace WeatherDashboard.Services
 
                 // Cache for 30 minutes
                 _cache.Set(cacheKey, forecasts, TimeSpan.FromMinutes(30));
-                _logger.LogInformation("Cached weather forecast for: {Lat}, {Lon}", latitude, longitude);
+                _logger.LogInformation("Retrieved weather forecast from API (new query) for: {CityName}", cityName);
 
                 return forecasts;
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Error fetching weather forecast for: {Lat}, {Lon}", latitude, longitude);
-                throw new Exception("Unable to fetch weather data. Please check your internet connection.", ex);
+                var statusCode = ex.StatusCode?.ToString() ?? "Unknown";
+                _logger.LogError(ex, "ERROR: Error fetching weather forecast for city: {CityName} ({Lat}, {Lon}) | HTTP Status: {StatusCode} | Message: {Message}",
+                    cityName, latitude, longitude, statusCode, ex.Message);
+                throw new Exception($"Unable to fetch weather data for {cityName}. HTTP Status: {statusCode}. Please check your internet connection.", ex);
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Error parsing weather forecast for: {Lat}, {Lon}", latitude, longitude);
-                throw new Exception("Error processing weather data.", ex);
+                _logger.LogError(ex, "ERROR: Error parsing weather forecast for city: {CityName} ({Lat}, {Lon}) | Message: {Message}",
+                    cityName, latitude, longitude, ex.Message);
+                throw new Exception($"Error processing weather data for {cityName}.", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ERROR: Unexpected error fetching forecast for city: {CityName} ({Lat}, {Lon}) | Message: {Message}",
+                    cityName, latitude, longitude, ex.Message);
+                throw new Exception($"Unexpected error fetching weather data for {cityName}.", ex);
             }
         }
     }
