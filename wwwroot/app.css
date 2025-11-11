@@ -547,3 +547,108 @@ body[data-theme="dark"] .temp-min {
         grid-template-columns: 1fr;
     }
 }
+
+/* Hourly Forecast Styles */
+.hourly-forecast-container {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.hourly-card {
+    min-width: 140px;
+    padding: 1rem;
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.hourly-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hourly-time {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+}
+
+.hourly-weather {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hourly-temp {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.hourly-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    opacity: 0.8;
+}
+
+.hourly-precipitation,
+.hourly-wind {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+/* Scrollbar styling for hourly forecast */
+.hourly-forecast-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.hourly-forecast-container::-webkit-scrollbar-track {
+    background: var(--card-border);
+    border-radius: 4px;
+}
+
+.hourly-forecast-container::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+
+.hourly-forecast-container::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
+}
+
+@media (max-width: 768px) {
+    .hourly-card {
+        min-width: 120px;
+        padding: 0.75rem;
+    }
+
+    .hourly-time {
+        font-size: 1rem;
+    }
+
+    .hourly-temp {
+        font-size: 1.2rem;
+    }
+
+    .hourly-details {
+        font-size: 0.75rem;
+    }
+}

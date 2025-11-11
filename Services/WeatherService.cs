@@ -59,12 +59,12 @@ namespace WeatherDashboard.Services
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Error fetching city search results for: {CityName}", cityName);
-                throw new Exception($"Unable to search for cities. Please check your internet connection.", ex);
+                throw new Exception($"Nem sikerült városokat keresni. Kérjük, ellenőrizze az internetkapcsolatot.", ex);
             }
             catch (JsonException ex)
             {
                 _logger.LogError(ex, "Error parsing city search results for: {CityName}", cityName);
-                throw new Exception("Error processing city data.", ex);
+                throw new Exception("Hiba történt a város adatok feldolgozása során.", ex);
             }
         }
 
@@ -98,7 +98,7 @@ namespace WeatherDashboard.Services
 
                 if (weatherResponse?.Daily == null)
                 {
-                    throw new Exception("No forecast data available.");
+                    throw new Exception("Nem állnak rendelkezésre előrejelzési adatok.");
                 }
 
                 var forecasts = new List<DailyForecast>();
@@ -125,22 +125,105 @@ namespace WeatherDashboard.Services
             }
             catch (HttpRequestException ex)
             {
-                var statusCode = ex.StatusCode?.ToString() ?? "Unknown";
+                var statusCode = ex.StatusCode?.ToString() ?? "Ismeretlen";
                 _logger.LogError(ex, "ERROR: Error fetching weather forecast for city: {CityName} ({Lat}, {Lon}) | HTTP Status: {StatusCode} | Message: {Message}",
                     cityName, latitude, longitude, statusCode, ex.Message);
-                throw new Exception($"Unable to fetch weather data for {cityName}. HTTP Status: {statusCode}. Please check your internet connection.", ex);
+                throw new Exception($"Nem sikerült lekérni az időjárás adatokat {cityName} számára. HTTP állapot: {statusCode}. Kérjük, ellenőrizze az internetkapcsolatot.", ex);
             }
             catch (JsonException ex)
             {
                 _logger.LogError(ex, "ERROR: Error parsing weather forecast for city: {CityName} ({Lat}, {Lon}) | Message: {Message}",
                     cityName, latitude, longitude, ex.Message);
-                throw new Exception($"Error processing weather data for {cityName}.", ex);
+                throw new Exception($"Hiba történt az időjárás adatok feldolgozása során {cityName} esetén.", ex);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ERROR: Unexpected error fetching forecast for city: {CityName} ({Lat}, {Lon}) | Message: {Message}",
                     cityName, latitude, longitude, ex.Message);
-                throw new Exception($"Unexpected error fetching weather data for {cityName}.", ex);
+                throw new Exception($"Váratlan hiba történt az időjárás adatok lekérése során {cityName} esetén.", ex);
+            }
+        }
+
+        public async Task<List<HourlyForecast>> GetHourlyForecastAsync(double latitude, double longitude, string cityName)
+        {
+            _logger.LogInformation("Fetching hourly forecast for city: {CityName} ({Lat}, {Lon})", cityName, latitude, longitude);
+
+            var cacheKey = $"hourly_{latitude:F2}_{longitude:F2}";
+
+            // Try to get from cache
+            if (_cache.TryGetValue(cacheKey, out List<HourlyForecast>? cachedHourly) && cachedHourly != null)
+            {
+                _logger.LogInformation("Retrieved hourly forecast from CACHE for: {CityName}", cityName);
+                return cachedHourly;
+            }
+
+            try
+            {
+                var url = $"{WeatherApiUrl}?latitude={latitude.ToString(CultureInfo.InvariantCulture)}&longitude={longitude.ToString(CultureInfo.InvariantCulture)}" +
+                          "&hourly=weather_code,temperature_2m,precipitation,wind_speed_10m" +
+                          "&timezone=auto&forecast_days=2";
+
+                var response = await _httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var weatherResponse = JsonSerializer.Deserialize<WeatherForecastResponse>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (weatherResponse?.Hourly == null)
+                {
+                    throw new Exception("Nem állnak rendelkezésre óránkénti előrejelzési adatok.");
+                }
+
+                var hourlyForecasts = new List<HourlyForecast>();
+                var now = DateTime.Now;
+
+                // Get next 12 hours starting from current hour
+                // Check all available hours, not just the first 12
+                for (int i = 0; i < weatherResponse.Hourly.Time.Count && hourlyForecasts.Count < 12; i++)
+                {
+                    var forecastTime = DateTime.Parse(weatherResponse.Hourly.Time[i]);
+
+                    // Only include future hours
+                    if (forecastTime >= now)
+                    {
+                        hourlyForecasts.Add(new HourlyForecast
+                        {
+                            Time = forecastTime,
+                            Temperature = weatherResponse.Hourly.Temperature_2m[i],
+                            WeatherDescription = HourlyForecast.GetWeatherDescription(weatherResponse.Hourly.Weather_Code[i]),
+                            Precipitation = weatherResponse.Hourly.Precipitation[i],
+                            WindSpeed = weatherResponse.Hourly.Wind_Speed_10m[i]
+                        });
+                    }
+                }
+
+                // Cache for 30 minutes
+                _cache.Set(cacheKey, hourlyForecasts, TimeSpan.FromMinutes(30));
+                _logger.LogInformation("Retrieved hourly forecast from API for: {CityName}", cityName);
+
+                return hourlyForecasts;
+            }
+            catch (HttpRequestException ex)
+            {
+                var statusCode = ex.StatusCode?.ToString() ?? "Ismeretlen";
+                _logger.LogError(ex, "ERROR: Error fetching hourly forecast for city: {CityName} ({Lat}, {Lon}) | HTTP Status: {StatusCode} | Message: {Message}",
+                    cityName, latitude, longitude, statusCode, ex.Message);
+                throw new Exception($"Nem sikerült lekérni az óránkénti időjárás adatokat {cityName} számára. HTTP állapot: {statusCode}. Kérjük, ellenőrizze az internetkapcsolatot.", ex);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "ERROR: Error parsing hourly forecast for city: {CityName} ({Lat}, {Lon}) | Message: {Message}",
+                    cityName, latitude, longitude, ex.Message);
+                throw new Exception($"Hiba történt az óránkénti időjárás adatok feldolgozása során {cityName} esetén.", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ERROR: Unexpected error fetching hourly forecast for city: {CityName} ({Lat}, {Lon}) | Message: {Message}",
+                    cityName, latitude, longitude, ex.Message);
+                throw new Exception($"Váratlan hiba történt az óránkénti időjárás adatok lekérése során {cityName} esetén.", ex);
             }
         }
     }

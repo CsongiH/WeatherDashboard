@@ -64,6 +64,27 @@
             }
             else if (selectedCity != null && forecasts.Any())
             {
+                @if (hourlyForecasts.Any())
+                {
+                    <div class="forecast-section">
+                        <h2 class="forecast-title">Mai óránkénti előrejelzés - @selectedCity.Name</h2>
+                        <div class="hourly-forecast-container">
+                            @foreach (var hourly in hourlyForecasts)
+                            {
+                                <div class="hourly-card">
+                                    <div class="hourly-time">@hourly.Time.ToString("HH:mm")</div>
+                                    <div class="hourly-weather">@hourly.WeatherDescription</div>
+                                    <div class="hourly-temp">@hourly.Temperature.ToString("F1")°C</div>
+                                    <div class="hourly-details">
+                                        <div class="hourly-precipitation">💧 @hourly.Precipitation.ToString("F1") mm</div>
+                                        <div class="hourly-wind">💨 @hourly.WindSpeed.ToString("F1") km/h</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 <div class="forecast-section">
                     <h2 class="forecast-title">5 napos előrejelzés - @selectedCity.Name</h2>
                     <div class="forecast-table-container">
@@ -132,6 +153,7 @@
 @code {
     private List<GeocodingResult> searchResults = new();
     private List<DailyForecast> forecasts = new();
+    private List<HourlyForecast> hourlyForecasts = new();
     private List<GeocodingResult> favoriteCities = new();
     private GeocodingResult? selectedCity;
     private string errorMessage = string.Empty;
@@ -152,18 +174,24 @@
     {
         searchResults = new List<GeocodingResult>(results);
         forecasts = new List<DailyForecast>();
+        hourlyForecasts = new List<HourlyForecast>();
         selectedCity = null;
-        errorMessage = string.Empty;
+        // Only clear error if we have actual results
+        if (results.Any())
+        {
+            errorMessage = string.Empty;
+        }
         StateHasChanged();
     }
 
-    private void HandleSearchError(string error)
+    private async Task HandleSearchError(string error)
     {
         errorMessage = error;
         if (!string.IsNullOrEmpty(error))
         {
             searchResults = new List<GeocodingResult>();
         }
+        await InvokeAsync(StateHasChanged);
     }
 
     private bool IsCityFavorite(GeocodingResult city)
@@ -192,12 +220,15 @@
             isLoading = true;
             selectedCity = city;
 
+            // Fetch both daily and hourly forecasts
             var newForecasts = await WeatherService.GetForecastAsync(city.Latitude, city.Longitude, city.Name);
+            var newHourlyForecasts = await WeatherService.GetHourlyForecastAsync(city.Latitude, city.Longitude, city.Name);
 
             // Only update forecasts if we got valid data
             if (newForecasts != null && newForecasts.Any())
             {
                 forecasts = newForecasts;
+                hourlyForecasts = newHourlyForecasts ?? new List<HourlyForecast>();
                 searchResults.Clear(); // Clear search results AFTER successful forecast load
                 StateHasChanged();
             }
@@ -205,14 +236,16 @@
             {
                 errorMessage = "Nem sikerült betölteni az időjárás adatokat.";
                 forecasts = new List<DailyForecast>();
+                hourlyForecasts = new List<HourlyForecast>();
                 selectedCity = null;
             }
         }
         catch (Exception ex)
         {
             errorMessage = ex.Message;
-            // Reset both forecasts and selectedCity to maintain consistent state
+            // Reset forecasts and selectedCity to maintain consistent state
             forecasts = new List<DailyForecast>();
+            hourlyForecasts = new List<HourlyForecast>();
             selectedCity = null;
         }
         finally
