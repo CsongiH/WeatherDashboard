@@ -34,17 +34,5 @@ namespace WeatherDashboard.Services
                 // Silently fail if localStorage is not available
             }
         }
-
-        public async Task RemoveItemAsync(string key)
-        {
-            try
-            {
-                await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", key);
-            }
-            catch
-            {
-                // Silently fail if localStorage is not available
-            }
-        }
     }
 }

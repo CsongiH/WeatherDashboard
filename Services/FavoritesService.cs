@@ -56,12 +56,6 @@ namespace WeatherDashboard.Services
             }
         }
 
-        public async Task<bool> IsFavoriteAsync(GeocodingResult city)
-        {
-            var favorites = await GetFavoritesAsync();
-            return favorites.Any(f => f.Latitude == city.Latitude && f.Longitude == city.Longitude);
-        }
-
         private async Task SaveFavoritesAsync(List<GeocodingResult> favorites)
         {
             try

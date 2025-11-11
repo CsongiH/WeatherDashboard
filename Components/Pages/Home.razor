@@ -229,7 +229,7 @@
             {
                 forecasts = newForecasts;
                 hourlyForecasts = newHourlyForecasts ?? new List<HourlyForecast>();
-                searchResults.Clear(); // Clear search results AFTER successful forecast load
+                searchResults = new List<GeocodingResult>(); // Clear search results AFTER successful forecast load
                 StateHasChanged();
             }
             else

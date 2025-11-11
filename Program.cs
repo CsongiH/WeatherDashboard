@@ -48,6 +48,13 @@ namespace WeatherDashboard
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
 
+            // Catch all unmatched routes and serve the Blazor app
+            app.MapFallback(context =>
+            {
+                context.Response.Redirect("/");
+                return Task.CompletedTask;
+            });
+
             app.Run();
         }
 

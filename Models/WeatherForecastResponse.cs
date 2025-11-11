@@ -2,8 +2,6 @@ namespace WeatherDashboard.Models
 {
     public class WeatherForecastResponse
     {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
         public DailyWeather? Daily { get; set; }
         public HourlyWeather? Hourly { get; set; }
     }

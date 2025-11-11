@@ -5,7 +5,7 @@
 <aside class="sidebar">
     <div class="sidebar-title">Kedvenc városok</div>
 
-    @if (!favoriteCities.Any())
+    @if (!FavoriteCities.Any())
     {
         <div class="sidebar-empty">
             Még nincsenek kedvenc városok.<br />
@@ -15,7 +15,7 @@
     else
     {
         <div class="sidebar-list">
-            @foreach (var city in favoriteCities)
+            @foreach (var city in FavoriteCities)
             {
                 <div class="sidebar-item" @onclick="() => OnCitySelected.InvokeAsync(city)">
                     <div class="sidebar-item-content">
@@ -49,8 +49,6 @@
 
     [Parameter]
     public EventCallback OnFavoritesChanged { get; set; }
-
-    private List<GeocodingResult> favoriteCities => FavoriteCities;
 
     private async Task RemoveFavorite(GeocodingResult city)
     {
